@@ -1,0 +1,25 @@
+{
+  "name": "system-documentation-tracker-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node generate-config.js",
+    "dev": "npx serve public --listen 50415",
+    "preview": "npx serve public",
+    "check": "node --check generate-config.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.0"
+  },
+  "devDependencies": {
+    "serve": "^14.2.0"
+  },
+  "keywords": [
+    "documentation",
+    "tracker",
+    "frontend",
+    "static"
+  ],
+  "author": "",
+  "license": "MIT"
+}

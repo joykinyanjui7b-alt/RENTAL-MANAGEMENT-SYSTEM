@@ -1,0 +1,338 @@
+{
+  "users": [
+    {
+      "id": "f6505700-2b0b-4a5e-9c64-ec26a16d214d",
+      "email": "admin@rms.com",
+      "full_name": "RMS Administrator",
+      "role": "admin",
+      "password_hash": "21846822213e409fc4e36710ba6ad752:c10a4d45686f6a2b58bd3daabae10ac17073c9234deedc1a2c164011acbf76cf",
+      "created_at": "2026-07-22T10:57:14.084Z"
+    },
+    {
+      "id": "29a31b1e-7212-426a-ad00-61b6202f2f61",
+      "email": "landlord@rms.com",
+      "full_name": "RMS Landlord",
+      "role": "landlord",
+      "password_hash": "74f4e84345093017faa13e9a67f62b7c:5f7b69afebf505e3b01c4a5f53d1fe09166b4e202d61afb8bf8c4a727608f984",
+      "created_at": "2026-07-22T10:57:14.415Z"
+    },
+    {
+      "id": "0f4c92f1-44ef-4594-98b3-ebfb9909cf35",
+      "email": "landlord2@rms.com",
+      "full_name": "Second RMS Landlord",
+      "role": "landlord",
+      "password_hash": "2011bbfe90d1c6606731fa089357f6e1:b6ea3181a1838bb05a8724afc5950a8f772fe9309160c3cf5dafded0308d4f4a",
+      "created_at": "2026-07-22T10:57:14.726Z"
+    },
+    {
+      "id": "a551ce05-6de1-4a1a-91ef-6a918fa7e943",
+      "email": "tenant1@rms.com",
+      "full_name": "Tenant One",
+      "role": "tenant",
+      "password_hash": "b7d8cbd8c4f8ed7a324288b2f6ff6479:dc138ed91abf77a0174a06642946b789722f5bda9e830753369d2716df91992d",
+      "created_at": "2026-07-22T10:57:15.075Z"
+    },
+    {
+      "id": "aaf8cab2-94f0-417d-8490-b7f299383022",
+      "email": "tenant2@rms.com",
+      "full_name": "Tenant Two",
+      "role": "tenant",
+      "password_hash": "09b226c1aac522e450352522b1012416:741d51d340ea1c5146a8f1a178b68dec2c406f6845e4d1650f0ebec5786d93e5",
+      "created_at": "2026-07-22T10:57:15.485Z"
+    },
+    {
+      "id": "8e346158-c74d-4116-ae67-4fb585603bb1",
+      "email": "tenant3@rms.com",
+      "full_name": "Tenant Three",
+      "role": "tenant",
+      "password_hash": "d6ac8d14891c1a4179a7f8a1fdb9199a:b490df3f3ea095d337c8f3453f5f59ab8a278bb60a1220cf5990d768f70a944b",
+      "created_at": "2026-07-22T10:57:15.837Z"
+    },
+    {
+      "id": "6b62b866-dc20-4e62-84a3-c7c43d01a92f",
+      "email": "tenant4@rms.com",
+      "full_name": "Tenant Four",
+      "role": "tenant",
+      "password_hash": "c70fba8feab04a171fdaf3988b64f10e:a3197df74cfb481de42e1c0c21a99491abd33b3f15fa0efec6bce61cd45c3586",
+      "created_at": "2026-07-22T10:57:16.105Z"
+    },
+    {
+      "id": "9e2fe6e4-754b-4e93-b1f6-f1303d512ffb",
+      "email": "tenant5@rms.com",
+      "full_name": "Tenant Five",
+      "role": "tenant",
+      "password_hash": "bdef327e5d41b677df011da4c671a86c:e66ecc0bc58ba0d2eb6c690da4bef20fcfe5207b2bba002395e139e761fe9d18",
+      "created_at": "2026-07-22T10:57:16.381Z"
+    }
+  ],
+  "sessions": [
+    {
+      "token": "45a8249f4d9415a781d88b0f0074dddf299d40fb903adf93a9435190ef1c7c65",
+      "user_id": "f6505700-2b0b-4a5e-9c64-ec26a16d214d",
+      "expires_at": "2026-07-29T10:57:35.474Z",
+      "created_at": "2026-07-22T10:57:35.474Z"
+    },
+    {
+      "token": "ab56e2e6d1d3252c2c33ffacdfd27abc0a114006a032893c4bd6bf6747272d48",
+      "user_id": "f6505700-2b0b-4a5e-9c64-ec26a16d214d",
+      "expires_at": "2026-07-29T10:58:00.600Z",
+      "created_at": "2026-07-22T10:58:00.602Z"
+    },
+    {
+      "token": "283ed7095ca75c12eee75ef6e9f645aabfb7763b78886cc191398cf9e2130011",
+      "user_id": "29a31b1e-7212-426a-ad00-61b6202f2f61",
+      "expires_at": "2026-07-29T10:58:01.310Z",
+      "created_at": "2026-07-22T10:58:01.310Z"
+    },
+    {
+      "token": "0ee6ecd34a0872cc8910fb42892215c82dd61c7f078502b46b21457bfa148358",
+      "user_id": "0f4c92f1-44ef-4594-98b3-ebfb9909cf35",
+      "expires_at": "2026-07-29T10:58:01.703Z",
+      "created_at": "2026-07-22T10:58:01.704Z"
+    },
+    {
+      "token": "8cf6ee6a78e1ec5175fad8a9a755cd1b2eb4725f9c8c4c5478c30c5388f6a297",
+      "user_id": "a551ce05-6de1-4a1a-91ef-6a918fa7e943",
+      "expires_at": "2026-07-29T10:58:02.006Z",
+      "created_at": "2026-07-22T10:58:02.006Z"
+    },
+    {
+      "token": "0b45a7d0e29426f48af60da4e780b3f9b8da2ba45d53fd69819ca1656dc069b3",
+      "user_id": "aaf8cab2-94f0-417d-8490-b7f299383022",
+      "expires_at": "2026-07-29T10:58:02.351Z",
+      "created_at": "2026-07-22T10:58:02.351Z"
+    },
+    {
+      "token": "08d63ee9669cac4fa33ba9fb576597b9ef0b023947dda000e38baf6df65372bb",
+      "user_id": "8e346158-c74d-4116-ae67-4fb585603bb1",
+      "expires_at": "2026-07-29T10:58:02.679Z",
+      "created_at": "2026-07-22T10:58:02.679Z"
+    },
+    {
+      "token": "ac7714167e73644dbff73a7dbfbc5bb7f57feeebb9eafddc466de7fcafe79e8e",
+      "user_id": "6b62b866-dc20-4e62-84a3-c7c43d01a92f",
+      "expires_at": "2026-07-29T10:58:02.976Z",
+      "created_at": "2026-07-22T10:58:02.976Z"
+    },
+    {
+      "token": "6786e531203dacdc0171d6a686b4336ad7ad43ff5b42f8e245f40d2f7659933f",
+      "user_id": "9e2fe6e4-754b-4e93-b1f6-f1303d512ffb",
+      "expires_at": "2026-07-29T10:58:03.280Z",
+      "created_at": "2026-07-22T10:58:03.280Z"
+    },
+    {
+      "token": "d88c8d65eda3aecd6b66ef3c61151aba3573509ba3b5853698455dbbc66e3352",
+      "user_id": "a551ce05-6de1-4a1a-91ef-6a918fa7e943",
+      "expires_at": "2026-07-29T11:15:50.412Z",
+      "created_at": "2026-07-22T11:15:50.412Z"
+    },
+    {
+      "token": "81b35e4bac12dcd39126b88b00387908c2b24648b625ad8909dde24c5f067cbc",
+      "user_id": "aaf8cab2-94f0-417d-8490-b7f299383022",
+      "expires_at": "2026-07-29T11:15:50.570Z",
+      "created_at": "2026-07-22T11:15:50.570Z"
+    },
+    {
+      "token": "b8f38ffa6d5b970931382169579b6231488372bf3dff00a9401e9685fbafd6f6",
+      "user_id": "8e346158-c74d-4116-ae67-4fb585603bb1",
+      "expires_at": "2026-07-29T11:15:50.720Z",
+      "created_at": "2026-07-22T11:15:50.720Z"
+    },
+    {
+      "token": "dc9551e7f7415be882913d9c8a626cae050a3f7b3c5ae7e18fa0eea9f257fb3e",
+      "user_id": "6b62b866-dc20-4e62-84a3-c7c43d01a92f",
+      "expires_at": "2026-07-29T11:15:50.862Z",
+      "created_at": "2026-07-22T11:15:50.862Z"
+    },
+    {
+      "token": "b58ce45679aa43a2b038ece9d45ec22062621a5b70a0afc66c89e2bf4669b29b",
+      "user_id": "9e2fe6e4-754b-4e93-b1f6-f1303d512ffb",
+      "expires_at": "2026-07-29T11:15:51.018Z",
+      "created_at": "2026-07-22T11:15:51.018Z"
+    },
+    {
+      "token": "48d1643b20a0eb2ab57b2b128bcd2fa6204b1e24299de808964f97a3b0640d9c",
+      "user_id": "a551ce05-6de1-4a1a-91ef-6a918fa7e943",
+      "expires_at": "2026-07-29T11:16:14.013Z",
+      "created_at": "2026-07-22T11:16:14.013Z"
+    },
+    {
+      "token": "a9c130e7b2a8eb9571054864227c9b20c52197f636606df2d856c89f3aa1cd1f",
+      "user_id": "aaf8cab2-94f0-417d-8490-b7f299383022",
+      "expires_at": "2026-07-29T11:16:14.174Z",
+      "created_at": "2026-07-22T11:16:14.174Z"
+    },
+    {
+      "token": "51c728a45f26be79e1e7a3d9a84d1dfbc6c4277e7073c048561d27c19bc70c78",
+      "user_id": "8e346158-c74d-4116-ae67-4fb585603bb1",
+      "expires_at": "2026-07-29T11:16:14.325Z",
+      "created_at": "2026-07-22T11:16:14.325Z"
+    },
+    {
+      "token": "992e91c0cc0b0d1fec6aeccf85e3da21f129a657607474fe8c168ebc9a8d57f5",
+      "user_id": "6b62b866-dc20-4e62-84a3-c7c43d01a92f",
+      "expires_at": "2026-07-29T11:16:14.470Z",
+      "created_at": "2026-07-22T11:16:14.470Z"
+    },
+    {
+      "token": "6a91f308a2c86c121b852e7a644052a3ef34ac0019eaf0c5f27474752cd4b406",
+      "user_id": "9e2fe6e4-754b-4e93-b1f6-f1303d512ffb",
+      "expires_at": "2026-07-29T11:16:14.621Z",
+      "created_at": "2026-07-22T11:16:14.621Z"
+    },
+    {
+      "token": "2f92d0d066c4250562ba2d1a9fea18828d425473ead9a8789f571f20cdc2f78e",
+      "user_id": "29a31b1e-7212-426a-ad00-61b6202f2f61",
+      "expires_at": "2026-07-29T11:16:14.779Z",
+      "created_at": "2026-07-22T11:16:14.779Z"
+    },
+    {
+      "token": "052e4e4c2e0e33ec8b5b259c1497fe67927acc9849f4046710421eeccb734c45",
+      "user_id": "a551ce05-6de1-4a1a-91ef-6a918fa7e943",
+      "expires_at": "2026-07-29T11:20:50.537Z",
+      "created_at": "2026-07-22T11:20:50.537Z"
+    },
+    {
+      "token": "2ff91e1907c1da7ba8e5bd26dff74b3614e4a3cd0136a441784513be63dd9949",
+      "user_id": "29a31b1e-7212-426a-ad00-61b6202f2f61",
+      "expires_at": "2026-07-29T11:20:50.702Z",
+      "created_at": "2026-07-22T11:20:50.702Z"
+    },
+    {
+      "token": "9cf7b8914bf3a140b3e02ef73615777acb0f38c4d3ce981e164114019f6553f1",
+      "user_id": "f6505700-2b0b-4a5e-9c64-ec26a16d214d",
+      "expires_at": "2026-07-29T11:20:50.857Z",
+      "created_at": "2026-07-22T11:20:50.857Z"
+    },
+    {
+      "token": "d1f697f6218999095d5e438525f964b8f1fbb720d45fdf47b661d13fd89098a2",
+      "user_id": "a551ce05-6de1-4a1a-91ef-6a918fa7e943",
+      "expires_at": "2026-07-29T11:21:11.254Z",
+      "created_at": "2026-07-22T11:21:11.254Z"
+    },
+    {
+      "token": "807204aa4489c44549e7e2798973aeeeceb1684079ad8382182a00a7e930fff5",
+      "user_id": "29a31b1e-7212-426a-ad00-61b6202f2f61",
+      "expires_at": "2026-07-29T11:29:32.823Z",
+      "created_at": "2026-07-22T11:29:32.823Z"
+    },
+    {
+      "token": "a305e6a53e288d19026d22cd9ffb741d3515309fdec7b12fae93a7477f861b8a",
+      "user_id": "29a31b1e-7212-426a-ad00-61b6202f2f61",
+      "expires_at": "2026-07-29T11:29:38.359Z",
+      "created_at": "2026-07-22T11:29:38.359Z"
+    },
+    {
+      "token": "8249f5d71555ebaebb8786bc7182bf6b3d9b948780e1ac5e222ed3cfb874eca2",
+      "user_id": "a551ce05-6de1-4a1a-91ef-6a918fa7e943",
+      "expires_at": "2026-07-29T11:29:38.536Z",
+      "created_at": "2026-07-22T11:29:38.536Z"
+    },
+    {
+      "token": "f63a749c54b5951e29880a1958f9d64b8e2f6964586a445f948c6c811ce1ee5b",
+      "user_id": "29a31b1e-7212-426a-ad00-61b6202f2f61",
+      "expires_at": "2026-07-29T11:37:30.862Z",
+      "created_at": "2026-07-22T11:37:30.862Z"
+    },
+    {
+      "token": "990cd494164a8e4f0da8d95d838e91b198e677ff6c74e60f576072f663241318",
+      "user_id": "29a31b1e-7212-426a-ad00-61b6202f2f61",
+      "expires_at": "2026-07-29T11:37:49.778Z",
+      "created_at": "2026-07-22T11:37:49.778Z"
+    },
+    {
+      "token": "e257a986e43d5ff1129d649776a7eb22b7a4955d44896620fddb5bb97731c4c4",
+      "user_id": "29a31b1e-7212-426a-ad00-61b6202f2f61",
+      "expires_at": "2026-07-29T11:38:10.014Z",
+      "created_at": "2026-07-22T11:38:10.015Z"
+    },
+    {
+      "token": "5f589e53f11e10ddb361198fd21cf935053262d669ad69ff1f2cae84e029448c",
+      "user_id": "a551ce05-6de1-4a1a-91ef-6a918fa7e943",
+      "expires_at": "2026-07-29T11:40:44.680Z",
+      "created_at": "2026-07-22T11:40:44.680Z"
+    },
+    {
+      "token": "8e1628f508a1afb6968ddb68696c3a80ab93b0f608bd5409904372b608608afd",
+      "user_id": "a551ce05-6de1-4a1a-91ef-6a918fa7e943",
+      "expires_at": "2026-07-29T11:43:13.942Z",
+      "created_at": "2026-07-22T11:43:13.942Z"
+    },
+    {
+      "token": "499601a7a38fc6fbe2dc330ebcafa863a0969494830b4e20bab34157e72fa14a",
+      "user_id": "a551ce05-6de1-4a1a-91ef-6a918fa7e943",
+      "expires_at": "2026-07-29T11:49:17.217Z",
+      "created_at": "2026-07-22T11:49:17.217Z"
+    },
+    {
+      "token": "38758585d791ec689061e98ffb612f550faddc4be309cd7ae7b13cc9a91f2e23",
+      "user_id": "a551ce05-6de1-4a1a-91ef-6a918fa7e943",
+      "expires_at": "2026-07-29T11:50:44.205Z",
+      "created_at": "2026-07-22T11:50:44.205Z"
+    },
+    {
+      "token": "583dcce16c5d84292feb984cdbb6ac8865ddf3b1e9a992ae0b6d9b444537dfd1",
+      "user_id": "6b62b866-dc20-4e62-84a3-c7c43d01a92f",
+      "expires_at": "2026-07-29T11:57:46.859Z",
+      "created_at": "2026-07-22T11:57:46.859Z"
+    },
+    {
+      "token": "105d4e138313977a8611af1dea0f5a7928ab80b4b2d9dd943ef96a3817f84403",
+      "user_id": "a551ce05-6de1-4a1a-91ef-6a918fa7e943",
+      "expires_at": "2026-07-29T11:59:06.259Z",
+      "created_at": "2026-07-22T11:59:06.259Z"
+    },
+    {
+      "token": "0290faf1d33fb8b8ed735ce997c41cb182050d7ccd36f38f5dd8814a8e762d6e",
+      "user_id": "a551ce05-6de1-4a1a-91ef-6a918fa7e943",
+      "expires_at": "2026-07-29T12:00:36.916Z",
+      "created_at": "2026-07-22T12:00:36.916Z"
+    }
+  ],
+  "houses": [
+    {
+      "id": "14750108-e392-4fe3-a726-0c338cc63727",
+      "houseNumber": "A-101",
+      "rentAmount": 12000,
+      "status": "vacant"
+    },
+    {
+      "id": "d0d88ea7-92d7-4f20-9a71-be1ccb4927a0",
+      "houseNumber": "B-203",
+      "rentAmount": 10000,
+      "status": "vacant"
+    },
+    {
+      "id": "48c36676-7287-4b8d-92f0-ee5a98ab1e86",
+      "houseNumber": "D-510",
+      "rentAmount": 16000,
+      "status": "vacant"
+    },
+    {
+      "id": "782ec949-4d8d-479e-833c-4a3dfdda7952",
+      "houseNumber": "Single room",
+      "roomType": "Single room",
+      "location": "Along Thika Road",
+      "description": "Single room available with shared bathroom and Wi-Fi.",
+      "rentAmount": 3000,
+      "price": 3000,
+      "status": "vacant"
+    }
+  ],
+  "tenants": [],
+  "applications": [
+    {
+      "id": "c132d6cf-1d2f-45c3-8e0d-e6026df51f0c",
+      "applicant_name": "Tenant One",
+      "applicantName": "Tenant One",
+      "contact": "tenant1@rms.com",
+      "message": "Presentation viewing request",
+      "house_id": "14750108-e392-4fe3-a726-0c338cc63727",
+      "houseId": "14750108-e392-4fe3-a726-0c338cc63727",
+      "date_applied": "2026-07-22",
+      "dateApplied": "2026-07-22",
+      "status": "rejected"
+    }
+  ],
+  "payments": []
+}

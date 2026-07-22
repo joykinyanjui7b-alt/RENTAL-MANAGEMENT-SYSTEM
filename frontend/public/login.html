@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rental Management System - Login</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="auth-page login-page">
+  <main class="auth-page-inner">
+    <section class="auth-card">
+      <div class="auth-brand">
+        <span class="brand-mark">RMS</span>
+        <div>
+          <strong>Rental Management System</strong>
+          <span>Manage your rentals and bookings</span>
+        </div>
+      </div>
+      <div class="auth-header">
+        <p class="eyebrow">Welcome back</p>
+        <h1>Sign in</h1>
+        <p class="auth-description">Access your rentals, bookings, and dashboard from one secure place.</p>
+      </div>
+
+      <form id="authForm" class="auth-form" data-mode="login">
+        <label>
+          <span>Email</span>
+          <input id="emailInput" type="email" placeholder="you@example.com" required />
+        </label>
+
+        <label class="password-field">
+          <span>Password</span>
+          <div class="password-wrapper">
+            <input id="passwordInput" type="password" placeholder="Enter your password" required />
+            <button id="togglePasswordButton" type="button" class="password-toggle" aria-label="Show password">Show</button>
+          </div>
+        </label>
+
+        <button class="primary-button full-width" id="authSubmitButton" type="submit">Login</button>
+      </form>
+
+      <p class="auth-footer">,
+        New here? <a href="register.html">Create an account</a>
+      </p>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+</body>
+</html>

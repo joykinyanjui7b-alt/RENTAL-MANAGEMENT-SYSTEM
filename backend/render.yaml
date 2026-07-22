@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: system-documentation-backend
+    env: node
+    plan: starter
+    buildCommand: "npm install"
+    startCommand: "npm run start"
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+    autoDeploy: true

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rental Management System - Register</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="auth-page register-page">
+  <main class="auth-page-inner">
+    <section class="auth-card">
+      <div class="auth-brand">
+        <span class="brand-mark">RMS</span>
+        <div>
+          <strong>Rental Management System</strong>
+          <span>Manage tenants, applications, and payments</span>
+        </div>
+      </div>
+      <div class="auth-header">
+        <p class="eyebrow">Get started</p>
+        <h1>Create account</h1>
+        <p class="auth-description">Register as a landlord or admin to start managing your rental properties.</p>
+      </div>
+
+      <form id="authForm" class="auth-form" data-mode="register">
+        <label>
+          <span>Full name</span>
+          <input id="fullNameInput" type="text" placeholder="Jane Doe" required />
+        </label>
+
+        <label>
+          <span>Email</span>
+          <input id="emailInput" type="email" placeholder="you@example.com" required />
+        </label>
+
+        <label>
+          <span>Account type</span>
+          <select id="roleInput" required>
+            <option value="landlord" selected>Landlord</option>
+            <option value="tenant">Tenant</option>
+          </select>
+        </label>
+
+        <label class="password-field">
+          <span>Password</span>
+          <div class="password-wrapper">
+            <input id="passwordInput" type="password" placeholder="Create a password" required />
+            <button id="togglePasswordButton" type="button" class="password-toggle" aria-label="Show password">Show</button>
+          </div>
+        </label>
+
+        <button class="primary-button full-width" id="authSubmitButton" type="submit">Register</button>
+      </form>
+
+      <p class="auth-footer">
+        Already have an account? <a href="login.html">Login</a>
+      </p>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+</body>
+</html>
