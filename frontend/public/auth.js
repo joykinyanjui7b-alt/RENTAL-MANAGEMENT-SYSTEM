@@ -39,8 +39,12 @@ async function api(path, options = {}) {
 function updateToggleButton() {
   if (!els.passwordInput || !els.togglePasswordButton) return;
   const isPassword = els.passwordInput.type === "password";
-  els.togglePasswordButton.textContent = isPassword ? "Show" : "Hide";
+  const icon = els.togglePasswordButton.querySelector("span");
+  if (icon) {
+    icon.textContent = isPassword ? "👁" : "🙈";
+  }
   els.togglePasswordButton.setAttribute("aria-label", `${isPassword ? "Show" : "Hide"} password`);
+  els.togglePasswordButton.setAttribute("title", `${isPassword ? "Show" : "Hide"} password`);
   els.togglePasswordButton.classList.toggle("active", !isPassword);
 }
 
