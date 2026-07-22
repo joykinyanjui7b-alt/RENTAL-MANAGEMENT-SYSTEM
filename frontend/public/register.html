@@ -45,11 +45,13 @@
           <span>Password</span>
           <div class="password-wrapper">
             <input id="passwordInput" type="password" placeholder="Create a password" required />
-            <button id="togglePasswordButton" type="button" class="password-toggle" aria-label="Show password">Show</button>
+            <button id="togglePasswordButton" type="button" class="password-toggle" aria-label="Show password" title="Show password">
+              <span aria-hidden="true">👁</span>
+            </button>
           </div>
         </label>
 
-        <button class="primary-button full-width" id="authSubmitButton" type="submit">Register</button>
+        <button class="primary-button modern-login-button" id="authSubmitButton" type="submit">Register</button>
       </form>
 
       <p class="auth-footer">
