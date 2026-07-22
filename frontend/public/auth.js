@@ -1,6 +1,8 @@
-const API_BASE_URL = (window.APP_CONFIG && window.APP_CONFIG.apiBaseUrl
-  ? window.APP_CONFIG.apiBaseUrl.replace(/\/$/, "")
-  : "");
+const API_BASE_URL = (() => {
+  const configured = window.APP_CONFIG && window.APP_CONFIG.apiBaseUrl !== undefined ? window.APP_CONFIG.apiBaseUrl : "";
+  const base = String(configured || "").replace(/\/$/, "");
+  return base || (window.location.origin || "");
+})();
 const els = {
   authForm: document.querySelector("#authForm"),
   emailInput: document.querySelector("#emailInput"),

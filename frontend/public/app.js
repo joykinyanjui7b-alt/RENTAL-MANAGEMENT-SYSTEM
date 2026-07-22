@@ -1,4 +1,8 @@
-const API_BASE_URL = (window.APP_CONFIG && window.APP_CONFIG.apiBaseUrl ? window.APP_CONFIG.apiBaseUrl.replace(/\/$/, "") : "");
+const API_BASE_URL = (() => {
+  const configured = window.APP_CONFIG && window.APP_CONFIG.apiBaseUrl !== undefined ? window.APP_CONFIG.apiBaseUrl : "";
+  const base = String(configured || "").replace(/\/$/, "");
+  return base || (window.location.origin || "");
+})();
 
 const state = {
   user: null,
@@ -165,6 +169,7 @@ async function loadUser() {
     els.userGreeting.textContent = `Hi, ${data.user.fullName}`;
     applyRoleUI(data.user.role);
     await Promise.all([loadHouses(), loadDashboard()]);
+    showPanel(data.user.role === "tenant" ? "houses" : "dashboard");
   } catch (error) {
     window.location.href = "login.html";
   }

@@ -7,7 +7,7 @@ const { URL } = require("url");
 const { Pool } = require("pg");
 
 const PORT = process.env.PORT || 3000;
-const DATABASE_URL = process.env.DATABASE_URL ? process.env.DATABASE_URL.trim() : "";
+const DATABASE_URL = (process.env.DATABASE_URL || process.env.SUPABASE_URL || process.env.SUPABASE_DATABASE_URL || "").trim();
 const usePostgres = Boolean(DATABASE_URL);
 const localDbFile = path.join(__dirname, "dev-db.json");
 
@@ -210,8 +210,8 @@ async function initDb() {
     if (usePostgres) {
       for (const h of seedHouses) {
         await pool.query(
-          "INSERT INTO houses (id, house_number, rent_amount, room_type, location, description, price, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'vacant')",
-          [h.id, h.houseNumber, h.rentAmount, h.roomType || h.houseNumber, h.location || "", h.description || "", h.rentAmount, h.rentAmount]
+          "INSERT INTO houses (id, house_number, rent_amount, room_type, location, description, price, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
+          [h.id, h.houseNumber, h.rentAmount, h.roomType || h.houseNumber, h.location || "", h.description || "", h.rentAmount, "vacant"]
         );
       }
     } else {
@@ -654,9 +654,27 @@ async function createPayment({ tenantId, amount, paymentDate }) {
   return record;
 }
 
+function isProductionEnvironment() {
+  return process.env.NODE_ENV === "production" || Boolean(process.env.RENDER) || Boolean(process.env.RENDER_SERVICE_NAME) || Boolean(process.env.VERCEL);
+}
+
+function getAllowedOrigin(req) {
+  const requestOrigin = req && req.headers ? req.headers.origin : "";
+  const configuredOrigins = (process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  if (requestOrigin && (configuredOrigins.includes(requestOrigin) || requestOrigin.includes("vercel.app") || requestOrigin.includes("localhost") || requestOrigin.includes("127.0.0.1"))) {
+    return requestOrigin;
+  }
+
+  return configuredOrigins[0] || requestOrigin || "*";
+}
+
 function setCorsHeaders(res, req) {
-  const origin = req && req.headers ? req.headers.origin : undefined;
-  res.setHeader("Access-Control-Allow-Origin", origin || "*");
+  const origin = getAllowedOrigin(req);
+  res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Vary", "Origin");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
@@ -700,7 +718,7 @@ function readRequestBody(req) {
 }
 
 function sendSessionCookie(res, token) {
-  const isProduction = process.env.NODE_ENV === "production";
+  const isProduction = isProductionEnvironment();
   const sameSite = isProduction ? "None" : "Lax";
   const secure = isProduction ? "; Secure" : "";
   const maxAge = 7 * 24 * 60 * 60;
@@ -708,7 +726,7 @@ function sendSessionCookie(res, token) {
 }
 
 function clearSessionCookie(res) {
-  const isProduction = process.env.NODE_ENV === "production";
+  const isProduction = isProductionEnvironment();
   const sameSite = isProduction ? "None" : "Lax";
   const secure = isProduction ? "; Secure" : "";
   res.setHeader("Set-Cookie", `session_token=; HttpOnly; SameSite=${sameSite}; Path=/; Max-Age=0${secure}`);

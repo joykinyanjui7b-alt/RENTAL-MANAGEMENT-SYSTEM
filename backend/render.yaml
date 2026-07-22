@@ -8,4 +8,12 @@ services:
     envVars:
       - key: DATABASE_URL
         sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: NODE_ENV
+        value: production
+      - key: FRONTEND_URL
+        value: https://rental-management-system-brown.vercel.app
+      - key: ALLOWED_ORIGINS
+        value: https://rental-management-system-brown.vercel.app,http://localhost:3000,http://127.0.0.1:3000
     autoDeploy: true
