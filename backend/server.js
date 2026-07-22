@@ -181,21 +181,7 @@ async function initDb() {
     saveLocalDb();
   }
 
-  if (!usePostgres && db.users.length === 0) {
-    const presentationUsers = [
-      ["admin@rms.com", "RMS Administrator", "admin"],
-      ["landlord@rms.com", "RMS Landlord", "landlord"],
-      ["landlord2@rms.com", "Second RMS Landlord", "landlord"],
-      ["tenant1@rms.com", "Tenant One", "tenant"],
-      ["tenant2@rms.com", "Tenant Two", "tenant"],
-      ["tenant3@rms.com", "Tenant Three", "tenant"],
-      ["tenant4@rms.com", "Tenant Four", "tenant"],
-      ["tenant5@rms.com", "Tenant Five", "tenant"]
-    ];
-    for (const [email, fullName, role] of presentationUsers) {
-      await createUser(email, fullName, role, "RmsDemo2026!");
-    }
-  }
+  await ensureSeedUsers();
 
   const houseCount = usePostgres
     ? Number((await pool.query("SELECT count(*) FROM houses")).rows[0].count)
@@ -255,6 +241,27 @@ async function createUser(email, fullName, role, password) {
   }
 
   return { id, email, full_name: fullName, role, created_at: createdAt };
+}
+
+async function ensureSeedUsers() {
+  const presentationUsers = [
+    ["admin@rms.com", "RMS Administrator", "admin"],
+    ["landlord@rms.com", "RMS Landlord", "landlord"],
+    ["landlord2@rms.com", "Second RMS Landlord", "landlord"],
+    ["tenant1@rms.com", "Tenant One", "tenant"],
+    ["tenant2@rms.com", "Tenant Two", "tenant"],
+    ["tenant3@rms.com", "Tenant Three", "tenant"],
+    ["tenant4@rms.com", "Tenant Four", "tenant"],
+    ["tenant5@rms.com", "Tenant Five", "tenant"]
+  ];
+
+  for (const [email, fullName, role] of presentationUsers) {
+    const existing = await getUserByEmail(email);
+    if (existing) {
+      continue;
+    }
+    await createUser(email, fullName, role, "RmsDemo2026!");
+  }
 }
 
 async function createSession(userId) {
