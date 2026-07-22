@@ -1,18 +1,18 @@
 :root {
   color-scheme: light;
-  --bg: #f5f7f8;
+  --bg: #f3f6f8;
   --surface: #ffffff;
-  --surface-strong: #eef3f5;
-  --ink: #152126;
-  --muted: #637178;
-  --line: #d9e0e3;
+  --surface-strong: #f7fbfc;
+  --ink: #16212b;
+  --muted: #64727a;
+  --line: #dce5e8;
   --accent: #1f7a6b;
-  --accent-dark: #14584d;
-  --warning: #a85f00;
-  --danger: #b42318;
-  --approved: #227447;
-  --review: #2257a5;
-  --shadow: 0 18px 45px rgba(20, 33, 38, 0.12);
+  --accent-dark: #165b4f;
+  --warning: #b96b00;
+  --danger: #c5423a;
+  --approved: #228457;
+  --review: #2c6fdb;
+  --shadow: 0 20px 50px rgba(15, 29, 36, 0.12);
 }
 
 * {
@@ -21,7 +21,7 @@
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: linear-gradient(135deg, #f7fbfc 0%, var(--bg) 100%);
   color: var(--ink);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -31,6 +31,27 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: var(--surface-strong);
+  color: var(--ink);
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(31, 122, 107, 0.12);
+  background: #ffffff;
 }
 
 .password-wrapper {
@@ -75,9 +96,10 @@ button {
 }
 
 .sidebar {
-  background: #17252b;
+  background: linear-gradient(180deg, #16212b 0%, #0f1d25 100%);
   color: #f7fbfc;
   padding: 28px 22px;
+  border-right: 1px solid rgba(255,255,255,0.06);
 }
 
 .brand {
@@ -117,13 +139,15 @@ button {
   color: #dce8ec;
   text-decoration: none;
   padding: 12px 14px;
-  border-radius: 8px;
+  border-radius: 10px;
+  transition: background 160ms ease, transform 160ms ease;
 }
 
 .nav-list a.active,
 .nav-list a:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
+  transform: translateX(2px);
 }
 
 .main-content {
@@ -234,9 +258,9 @@ h2 {
 .stat-card,
 .panel {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 16px;
   background: var(--surface);
-  box-shadow: 0 1px 0 rgba(20, 33, 38, 0.04);
+  box-shadow: var(--shadow);
 }
 
 .stat-card {
@@ -303,10 +327,19 @@ select,
 textarea {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 12px;
   background: #ffffff;
   color: var(--ink);
-  padding: 11px 12px;
+  padding: 12px 14px;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(31, 122, 107, 0.12);
+  background: #ffffff;
 }
 
 textarea {
@@ -319,7 +352,8 @@ textarea {
 
 table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   min-width: 760px;
 }
 
@@ -335,6 +369,11 @@ th {
   color: var(--muted);
   font-size: 0.78rem;
   text-transform: uppercase;
+  background: var(--surface-strong);
+}
+
+tbody tr:hover {
+  background: rgba(31, 122, 107, 0.04);
 }
 
 td p {
