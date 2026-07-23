@@ -22,18 +22,33 @@ function showToast(message) {
 }
 
 async function api(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: "include",
-    headers: { "Content-Type": "application/json", ...options.headers },
-    ...options
-  });
+  const targets = [`${API_BASE_URL}${path}`, `${window.location.origin}${path}`];
+  let lastErr;
+  for (const url of targets) {
+    try {
+      const response = await fetch(url, {
+        credentials: "include",
+        headers: { "Content-Type": "application/json", ...options.headers },
+        ...options
+      });
 
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(payload.error || "Request failed");
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "Request failed");
+      }
+
+      return payload;
+    } catch (err) {
+      lastErr = err;
+      const isNetworkError = err instanceof TypeError || /failed to fetch/i.test(String(err.message)) || /network error/i.test(String(err.message));
+      if (!isNetworkError) {
+        throw err;
+      }
+      // try next
+    }
   }
 
-  return payload;
+  throw lastErr;
 }
 
 function updateToggleButton() {

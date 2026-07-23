@@ -79,22 +79,39 @@ const els = {
 };
 
 async function api(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers
-    },
-    ...options
-  });
+  const targets = [`${API_BASE_URL}${path}`, `${window.location.origin}${path}`];
+  let lastErr;
+  for (const url of targets) {
+    try {
+      const response = await fetch(url, {
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...options.headers
+        },
+        ...options
+      });
 
-  const payload = await response.json();
+      const payload = await response.json();
 
-  if (!response.ok) {
-    throw new Error(payload.error || "Request failed");
+      if (!response.ok) {
+        // If the server responded with an error status, surface it immediately
+        throw new Error(payload.error || "Request failed");
+      }
+
+      return payload;
+    } catch (err) {
+      lastErr = err;
+      // Only fallback on network-type failures (fetch throws TypeError on network errors).
+      const isNetworkError = err instanceof TypeError || /failed to fetch/i.test(String(err.message)) || /network error/i.test(String(err.message));
+      if (!isNetworkError) {
+        throw err;
+      }
+      // otherwise try next target
+    }
   }
 
-  return payload;
+  throw lastErr;
 }
 
 function escapeHtml(value) {
