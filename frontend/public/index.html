@@ -273,39 +273,38 @@
             </div>
           </div>
         </section>
+        <section class="view-panel" id="panel-houses" hidden>
+          <div class="panel document-panel">
+            <div class="panel-header compact">
+              <div>
+                <p class="eyebrow">Browse rentals</p>
+                <h2>Available Houses</h2>
+              </div>
+            </div>
+            <div class="house-grid" id="tenantHouseList"></div>
+          </div>
+          <div class="panel document-panel tenant-application-panel">
+            <div class="panel-header compact">
+              <div>
+                <p class="eyebrow">Request a viewing</p>
+                <h2>Apply for a house</h2>
+              </div>
+            </div>
+            <form id="tenantApplicationForm" class="document-form">
+              <label>
+                <span>House</span>
+                <select id="tenantApplicationHouseInput" required></select>
+              </label>
+              <label>
+                <span>Message</span>
+                <textarea id="tenantApplicationMessageInput" rows="3" placeholder="Tell the landlord when you would like to move in."></textarea>
+              </label>
+              <button class="primary-button" type="submit">Submit application</button>
+            </form>
+          </div>
+        </section>
       </main>
     </div>
-
-    <section class="view-panel" id="panel-houses" hidden>
-      <div class="panel document-panel">
-        <div class="panel-header">
-          <div>
-            <p class="eyebrow">Browse rentals</p>
-            <h2>Available Houses</h2>
-          </div>
-        </div>
-        <div class="house-grid" id="tenantHouseList"></div>
-      </div>
-      <div class="panel document-panel tenant-application-panel">
-        <div class="panel-header">
-          <div>
-            <p class="eyebrow">Request a viewing</p>
-            <h2>Apply for a house</h2>
-          </div>
-        </div>
-        <form id="tenantApplicationForm" class="document-form">
-          <label>
-            <span>House</span>
-            <select id="tenantApplicationHouseInput" required></select>
-          </label>
-          <label>
-            <span>Message</span>
-            <textarea id="tenantApplicationMessageInput" rows="3" placeholder="Tell the landlord when you would like to move in."></textarea>
-          </label>
-          <button class="primary-button" type="submit">Submit application</button>
-        </form>
-      </div>
-    </section>
 
     <dialog id="houseDialog">
       <form id="houseForm" method="dialog" class="document-form">

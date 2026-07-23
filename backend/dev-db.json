@@ -287,6 +287,48 @@
       "user_id": "a551ce05-6de1-4a1a-91ef-6a918fa7e943",
       "expires_at": "2026-07-29T12:24:31.687Z",
       "created_at": "2026-07-22T12:24:31.687Z"
+    },
+    {
+      "token": "2c75a3a07ca517d281fc17164d88637b59684a15efb5a599227615389985389c",
+      "user_id": "0f4c92f1-44ef-4594-98b3-ebfb9909cf35",
+      "expires_at": "2026-07-30T09:48:48.359Z",
+      "created_at": "2026-07-23T09:48:48.359Z"
+    },
+    {
+      "token": "0d327e52fb1e365fca0805101d2639a6c9cf37077626c296c65792e86160169f",
+      "user_id": "29a31b1e-7212-426a-ad00-61b6202f2f61",
+      "expires_at": "2026-07-30T11:41:37.786Z",
+      "created_at": "2026-07-23T11:41:37.789Z"
+    },
+    {
+      "token": "5b9a1c3027f8f4125e5da1f4ac71552cdef82bee3f434e194ac735168155888f",
+      "user_id": "29a31b1e-7212-426a-ad00-61b6202f2f61",
+      "expires_at": "2026-07-30T12:09:40.803Z",
+      "created_at": "2026-07-23T12:09:40.804Z"
+    },
+    {
+      "token": "236365e1da82c8edda19681a0141f1a55c5f70cd14eb87c551defc2f4e1559e9",
+      "user_id": "0f4c92f1-44ef-4594-98b3-ebfb9909cf35",
+      "expires_at": "2026-07-30T12:09:56.996Z",
+      "created_at": "2026-07-23T12:09:56.996Z"
+    },
+    {
+      "token": "bc7384705e97c040ab8556114c80e854470825b07f404264bc8f3ca91b5cacd5",
+      "user_id": "aaf8cab2-94f0-417d-8490-b7f299383022",
+      "expires_at": "2026-07-30T12:10:24.554Z",
+      "created_at": "2026-07-23T12:10:24.554Z"
+    },
+    {
+      "token": "c835dc65b5a7cce8736baa9d5b330ec801280b80e5eaa1f03348ce40bb340938",
+      "user_id": "a551ce05-6de1-4a1a-91ef-6a918fa7e943",
+      "expires_at": "2026-07-30T12:10:47.783Z",
+      "created_at": "2026-07-23T12:10:47.783Z"
+    },
+    {
+      "token": "955f6590946692543aaba99adf72bf734cfffff24c3d2ab7386944667821461a",
+      "user_id": "29a31b1e-7212-426a-ad00-61b6202f2f61",
+      "expires_at": "2026-07-30T13:35:22.792Z",
+      "created_at": "2026-07-23T13:35:22.793Z"
     }
   ],
   "houses": [
@@ -294,19 +336,19 @@
       "id": "14750108-e392-4fe3-a726-0c338cc63727",
       "houseNumber": "A-101",
       "rentAmount": 12000,
-      "status": "vacant"
+      "status": "occupied"
     },
     {
       "id": "d0d88ea7-92d7-4f20-9a71-be1ccb4927a0",
       "houseNumber": "B-203",
       "rentAmount": 10000,
-      "status": "vacant"
+      "status": "occupied"
     },
     {
       "id": "48c36676-7287-4b8d-92f0-ee5a98ab1e86",
       "houseNumber": "D-510",
       "rentAmount": 16000,
-      "status": "vacant"
+      "status": "occupied"
     },
     {
       "id": "782ec949-4d8d-479e-833c-4a3dfdda7952",
@@ -319,7 +361,59 @@
       "status": "vacant"
     }
   ],
-  "tenants": [],
+  "tenants": [
+    {
+      "id": "7b0b182c-9fa1-459c-b9e6-ccc6f49fede3",
+      "name": "Mary Njeri",
+      "phone": "0712345678",
+      "email": "marynjeri@example.com",
+      "house_id": "14750108-e392-4fe3-a726-0c338cc63727",
+      "houseId": "14750108-e392-4fe3-a726-0c338cc63727",
+      "move_in_date": "2026-07-23",
+      "moveInDate": "2026-07-23",
+      "move_out_date": null,
+      "moveOutDate": null,
+      "status": "active",
+      "rent_status": "unpaid",
+      "rentStatus": "unpaid",
+      "created_at": "2026-07-23T11:42:55.990Z",
+      "createdAt": "2026-07-23T11:42:55.990Z"
+    },
+    {
+      "id": "2046e571-ca2a-4257-9bf6-3cf6cb1f6712",
+      "name": "Risper Nyawira ",
+      "phone": "0724681012",
+      "email": "rispernyawira@example.com",
+      "house_id": "d0d88ea7-92d7-4f20-9a71-be1ccb4927a0",
+      "houseId": "d0d88ea7-92d7-4f20-9a71-be1ccb4927a0",
+      "move_in_date": "2026-07-23",
+      "moveInDate": "2026-07-23",
+      "move_out_date": null,
+      "moveOutDate": null,
+      "status": "active",
+      "rent_status": "unpaid",
+      "rentStatus": "unpaid",
+      "created_at": "2026-07-23T11:44:03.029Z",
+      "createdAt": "2026-07-23T11:44:03.029Z"
+    },
+    {
+      "id": "7c94e7dc-f7ae-4f71-b3ad-379fb54f946c",
+      "name": "Trevor Kamau",
+      "phone": "0713571113",
+      "email": "",
+      "house_id": "48c36676-7287-4b8d-92f0-ee5a98ab1e86",
+      "houseId": "48c36676-7287-4b8d-92f0-ee5a98ab1e86",
+      "move_in_date": "2026-07-23",
+      "moveInDate": "2026-07-23",
+      "move_out_date": null,
+      "moveOutDate": null,
+      "status": "active",
+      "rent_status": "unpaid",
+      "rentStatus": "unpaid",
+      "created_at": "2026-07-23T11:44:42.466Z",
+      "createdAt": "2026-07-23T11:44:42.466Z"
+    }
+  ],
   "applications": [
     {
       "id": "c132d6cf-1d2f-45c3-8e0d-e6026df51f0c",
@@ -334,5 +428,15 @@
       "status": "rejected"
     }
   ],
-  "payments": []
+  "payments": [
+    {
+      "id": "7c83cbff-f0c4-4761-92a6-c6d75254325f",
+      "tenant_id": "7c94e7dc-f7ae-4f71-b3ad-379fb54f946c",
+      "tenantId": "7c94e7dc-f7ae-4f71-b3ad-379fb54f946c",
+      "amount": 10000,
+      "payment_date": "2026-06-30",
+      "paymentDate": "2026-06-30",
+      "balance": 6000
+    }
+  ]
 }
