@@ -15,11 +15,14 @@ if (!isProductionBuild && fs.existsSync(envPath)) {
   dotenv.config({ path: envPath });
 }
 
-const apiBaseUrl = process.env.API_BASE_URL?.trim() || "";
+const rawApiBaseUrl = process.env.API_BASE_URL?.trim() || "";
+const fallbackApiBaseUrl = "https://rms-zffu.onrender.com";
+const brokenBackendHostnames = ["system-documentation-backend.onrender.com", "rental-management-system-vnn1.onrender.com"];
+const configuredApiBaseUrl = rawApiBaseUrl && !brokenBackendHostnames.some((host) => rawApiBaseUrl.includes(host)) ? rawApiBaseUrl : "";
 const defaultApiBaseUrl = isProductionBuild
-  ? "https://system-documentation-backend.onrender.com"
+  ? fallbackApiBaseUrl
   : "http://localhost:3000";
-const resolvedApiBaseUrl = apiBaseUrl || defaultApiBaseUrl;
+const resolvedApiBaseUrl = configuredApiBaseUrl || defaultApiBaseUrl;
 const content = `window.APP_CONFIG = {\n  apiBaseUrl: "${resolvedApiBaseUrl.replace(/"/g, '\\"')}"\n};\n`;
 
 fs.writeFileSync(path.join(__dirname, "public", "config.js"), content, "utf8");

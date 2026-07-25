@@ -665,6 +665,23 @@ function isProductionEnvironment() {
   return process.env.NODE_ENV === "production" || Boolean(process.env.RENDER) || Boolean(process.env.RENDER_SERVICE_NAME) || Boolean(process.env.VERCEL);
 }
 
+// ---------------------------------------------------------------------------
+// FIX: decide Secure/SameSite from the ACTUAL request instead of guessing
+// which hosting platform we're on. This is the core fix for users getting
+// logged out — previously isProductionEnvironment() could return false even
+// when the site was live behind HTTPS (e.g. an unset NODE_ENV, or a host
+// that doesn't set RENDER/VERCEL env vars), which meant the session cookie
+// was sent without SameSite=None; Secure and got silently dropped by the
+// browser on cross-origin requests.
+// ---------------------------------------------------------------------------
+function isRequestSecure(req) {
+  const forwardedProto = req.headers["x-forwarded-proto"];
+  if (forwardedProto) {
+    return forwardedProto.split(",")[0].trim().toLowerCase() === "https";
+  }
+  return Boolean(req.socket && req.socket.encrypted);
+}
+
 function getAllowedOrigin(req) {
   const requestOrigin = req && req.headers ? req.headers.origin : "";
   const configuredOrigins = (process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || "")
@@ -672,7 +689,7 @@ function getAllowedOrigin(req) {
     .map((value) => value.trim())
     .filter(Boolean);
 
-  if (requestOrigin && (configuredOrigins.includes(requestOrigin) || requestOrigin.includes("vercel.app") || requestOrigin.includes("localhost") || requestOrigin.includes("127.0.0.1"))) {
+  if (requestOrigin && (configuredOrigins.includes(requestOrigin) || requestOrigin.includes("vercel.app") || requestOrigin.includes("onrender.com") || requestOrigin.includes("localhost") || requestOrigin.includes("127.0.0.1"))) {
     return requestOrigin;
   }
 
@@ -724,18 +741,21 @@ function readRequestBody(req) {
   });
 }
 
-function sendSessionCookie(res, token) {
-  const isProduction = isProductionEnvironment();
-  const sameSite = isProduction ? "None" : "Lax";
-  const secure = isProduction ? "; Secure" : "";
+// FIX: sendSessionCookie/clearSessionCookie now take `req` and base the
+// Secure/SameSite attributes on the real request protocol via
+// isRequestSecure(req), instead of the unreliable isProductionEnvironment().
+function sendSessionCookie(res, token, req) {
+  const secureRequest = isRequestSecure(req);
+  const sameSite = secureRequest ? "None" : "Lax";
+  const secure = secureRequest ? "; Secure" : "";
   const maxAge = 7 * 24 * 60 * 60;
   res.setHeader("Set-Cookie", `session_token=${token}; HttpOnly; SameSite=${sameSite}; Path=/; Max-Age=${maxAge}${secure}`);
 }
 
-function clearSessionCookie(res) {
-  const isProduction = isProductionEnvironment();
-  const sameSite = isProduction ? "None" : "Lax";
-  const secure = isProduction ? "; Secure" : "";
+function clearSessionCookie(res, req) {
+  const secureRequest = isRequestSecure(req);
+  const sameSite = secureRequest ? "None" : "Lax";
+  const secure = secureRequest ? "; Secure" : "";
   res.setHeader("Set-Cookie", `session_token=; HttpOnly; SameSite=${sameSite}; Path=/; Max-Age=0${secure}`);
 }
 
@@ -782,7 +802,7 @@ async function handleApi(req, res, pathname) {
     const role = requestedRole === "tenant" ? "tenant" : "landlord";
     const user = await createUser(email, fullName, role, password);
     const token = await createSession(user.id);
-    sendSessionCookie(res, token);
+    sendSessionCookie(res, token, req);
     sendJson(res, 201, { user: sanitizeUser(user) }, req);
     return;
   }
@@ -804,7 +824,7 @@ async function handleApi(req, res, pathname) {
     }
 
     const token = await createSession(user.id);
-    sendSessionCookie(res, token);
+    sendSessionCookie(res, token, req);
     sendJson(res, 200, { user: sanitizeUser(user) }, req);
     return;
   }
@@ -814,7 +834,7 @@ async function handleApi(req, res, pathname) {
     if (cookies.session_token) {
       await deleteSession(cookies.session_token);
     }
-    clearSessionCookie(res);
+    clearSessionCookie(res, req);
     sendJson(res, 200, { ok: true }, req);
     return;
   }

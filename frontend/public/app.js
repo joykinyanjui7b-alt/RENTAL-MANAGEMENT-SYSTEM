@@ -1,7 +1,8 @@
+const FALLBACK_API_BASE_URL = "https://rms-zffu.onrender.com";
 const API_BASE_URL = (() => {
   const configured = window.APP_CONFIG && window.APP_CONFIG.apiBaseUrl !== undefined ? window.APP_CONFIG.apiBaseUrl : "";
-  const base = String(configured || "").replace(/\/$/, "");
-  return base || (window.location.origin || "");
+  const base = String(configured || FALLBACK_API_BASE_URL || "").replace(/\/$/, "");
+  return base || FALLBACK_API_BASE_URL;
 })();
 
 const state = {
@@ -79,7 +80,7 @@ const els = {
 };
 
 async function api(path, options = {}) {
-  const targets = [`${API_BASE_URL}${path}`, `${window.location.origin}${path}`];
+  const targets = [`${API_BASE_URL}${path}`, `${FALLBACK_API_BASE_URL}${path}`, `${window.location.origin}${path}`];
   let lastErr;
   for (const url of targets) {
     try {
@@ -176,19 +177,33 @@ els.navLinks.forEach((link) => {
 });
 
 async function loadUser() {
+  // Step 1: check auth. If this fails or returns no user, THEN we redirect.
+  let data;
   try {
-    const data = await api("/api/me");
-    if (!data.user) {
-      window.location.href = "login.html";
-      return;
-    }
-    state.user = data.user;
-    els.userGreeting.textContent = `Hi, ${data.user.fullName}`;
-    applyRoleUI(data.user.role);
-    await Promise.all([loadHouses(), loadDashboard()]);
-    showPanel(data.user.role === "tenant" ? "houses" : "dashboard");
+    data = await api("/api/me");
   } catch (error) {
     window.location.href = "login.html";
+    return;
+  }
+
+  if (!data.user) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  state.user = data.user;
+  els.userGreeting.textContent = `Hi, ${data.user.fullName}`;
+  applyRoleUI(data.user.role);
+  showPanel(data.user.role === "tenant" ? "houses" : "dashboard");
+
+  // Step 2: load dashboard data. The user is already confirmed logged in,
+  // so a failure here (slow backend, brief network blip, Render free-tier
+  // cold start, etc.) should show a retry message — NOT kick the user
+  // back to the login screen.
+  try {
+    await Promise.all([loadHouses(), loadDashboard()]);
+  } catch (error) {
+    showToast("Some data failed to load. Refreshing may help.");
   }
 }
 
@@ -405,6 +420,7 @@ async function loadTenants() {
   state.tenants = data.tenants || [];
   renderTenants();
 }
+
 
 function renderTenants() {
   const needle = state.tenantSearch.trim().toLowerCase();

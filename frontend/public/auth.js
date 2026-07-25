@@ -1,7 +1,8 @@
+const FALLBACK_API_BASE_URL = "https://rms-zffu.onrender.com";
 const API_BASE_URL = (() => {
   const configured = window.APP_CONFIG && window.APP_CONFIG.apiBaseUrl !== undefined ? window.APP_CONFIG.apiBaseUrl : "";
-  const base = String(configured || "").replace(/\/$/, "");
-  return base || (window.location.origin || "");
+  const base = String(configured || FALLBACK_API_BASE_URL || "").replace(/\/$/, "");
+  return base || FALLBACK_API_BASE_URL;
 })();
 const els = {
   authForm: document.querySelector("#authForm"),
@@ -22,7 +23,7 @@ function showToast(message) {
 }
 
 async function api(path, options = {}) {
-  const targets = [`${API_BASE_URL}${path}`, `${window.location.origin}${path}`];
+  const targets = [`${API_BASE_URL}${path}`, `${FALLBACK_API_BASE_URL}${path}`, `${window.location.origin}${path}`];
   let lastErr;
   for (const url of targets) {
     try {
@@ -101,6 +102,12 @@ async function handleSubmit(event) {
     return;
   }
 
+  if (els.authSubmitButton) {
+    if (els.authSubmitButton.disabled) return; // already submitting, ignore extra clicks
+    els.authSubmitButton.disabled = true;
+    els.authSubmitButton.textContent = mode === "register" ? "Registering..." : "Logging in...";
+  }
+
   try {
     await api(`/api/${mode}`, {
       method: "POST",
@@ -114,15 +121,14 @@ async function handleSubmit(event) {
     window.location.href = `index.html?message=${encodeURIComponent(message)}&status=success`;
   } catch (error) {
     showToast(error.message);
+    if (els.authSubmitButton) {
+      els.authSubmitButton.disabled = false;
+      els.authSubmitButton.textContent = mode === "register" ? "Register" : "Login";
+    }
   }
 }
 
 if (els.authForm) {
   initPasswordToggle();
   els.authForm.addEventListener("submit", handleSubmit);
-  els.authSubmitButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    handleSubmit(event);
-  });
 }
