@@ -171,6 +171,7 @@ async function initDb() {
       ALTER TABLE houses ADD COLUMN IF NOT EXISTS location text;
       ALTER TABLE houses ADD COLUMN IF NOT EXISTS description text;
       ALTER TABLE houses ADD COLUMN IF NOT EXISTS price numeric;
+      ALTER TABLE houses ADD COLUMN IF NOT EXISTS owner_id text;
     `);
   }
 
@@ -182,6 +183,28 @@ async function initDb() {
   }
 
   await ensureSeedUsers();
+
+  if (usePostgres) {
+    const landlordResult = await pool.query("SELECT id FROM users WHERE role = 'landlord' ORDER BY created_at LIMIT 1");
+    const landlordId = landlordResult.rowCount > 0 ? landlordResult.rows[0].id : null;
+    if (landlordId) {
+      await pool.query("UPDATE houses SET owner_id = $1 WHERE owner_id IS NULL", [landlordId]);
+    }
+  } else {
+    const db = loadLocalDb();
+    const landlord = db.users.find((user) => user.role === "landlord");
+    if (landlord) {
+      let changed = false;
+      for (const house of db.houses) {
+        if (!house.ownerId && !house.owner_id) {
+          house.ownerId = landlord.id;
+          house.owner_id = landlord.id;
+          changed = true;
+        }
+      }
+      if (changed) saveLocalDb();
+    }
+  }
 
   const houseCount = usePostgres
     ? Number((await pool.query("SELECT count(*) FROM houses")).rows[0].count)
@@ -342,10 +365,10 @@ async function requireRole(res, req, roles) {
   return user;
 }
 
-async function getHouses() {
+async function getHouses(user = null) {
   if (usePostgres) {
     const result = await pool.query("SELECT * FROM houses ORDER BY house_number");
-    return result.rows.map((h) => ({
+    const houses = result.rows.map((h) => ({
       id: h.id,
       houseNumber: h.house_number,
       roomType: h.room_type || h.house_number,
@@ -353,11 +376,16 @@ async function getHouses() {
       description: h.description || "",
       rentAmount: Number(h.rent_amount ?? h.price ?? 0),
       price: Number(h.price ?? h.rent_amount ?? 0),
-      status: h.status
+      status: h.status,
+      ownerId: h.owner_id || null
     }));
+    if (user && user.role === "landlord") {
+      return houses.filter((house) => house.ownerId === user.id);
+    }
+    return houses;
   }
   const db = loadLocalDb();
-  return db.houses.map((h) => ({
+  const houses = db.houses.map((h) => ({
     id: h.id,
     houseNumber: h.houseNumber,
     roomType: h.roomType || h.houseNumber,
@@ -365,8 +393,13 @@ async function getHouses() {
     description: h.description || "",
     rentAmount: Number(h.rentAmount ?? h.price ?? 0),
     price: Number(h.price ?? h.rentAmount ?? 0),
-    status: h.status
+    status: h.status,
+    ownerId: h.ownerId || h.owner_id || null
   }));
+  if (user && user.role === "landlord") {
+    return houses.filter((house) => house.ownerId === user.id);
+  }
+  return houses;
 }
 
 async function setHouseStatus(houseId, status) {
@@ -382,7 +415,7 @@ async function setHouseStatus(houseId, status) {
   }
 }
 
-async function createHouse({ houseNumber, rentAmount, roomType, location, description, price }) {
+async function createHouse({ houseNumber, rentAmount, roomType, location, description, price, ownerId }) {
   const id = crypto.randomUUID();
   const numericPrice = Number(price ?? rentAmount);
   const numericRent = Number(rentAmount ?? numericPrice);
@@ -395,13 +428,14 @@ async function createHouse({ houseNumber, rentAmount, roomType, location, descri
     description: String(description || "").trim(),
     rentAmount: numericRent,
     price: numericPrice,
-    status: "vacant"
+    status: "vacant",
+    ownerId: ownerId || null
   };
 
   if (usePostgres) {
     await pool.query(
-      "INSERT INTO houses (id, house_number, rent_amount, room_type, location, description, price, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'vacant')",
-      [id, house.houseNumber, house.rentAmount, house.roomType, house.location, house.description, house.price]
+      "INSERT INTO houses (id, house_number, rent_amount, room_type, location, description, price, status, owner_id) VALUES ($1,$2,$3,$4,$5,$6,$7,'vacant',$8)",
+      [id, house.houseNumber, house.rentAmount, house.roomType, house.location, house.description, house.price, house.ownerId]
     );
   } else {
     const db = loadLocalDb();
@@ -412,8 +446,8 @@ async function createHouse({ houseNumber, rentAmount, roomType, location, descri
   return house;
 }
 
-async function getTenants() {
-  const houses = await getHouses();
+async function getTenants(user = null) {
+  const houses = await getHouses(user);
   const houseMap = Object.fromEntries(houses.map((h) => [h.id, h]));
 
   if (usePostgres) {
@@ -512,8 +546,8 @@ async function deleteTenant(id) {
   return true;
 }
 
-async function getApplications() {
-  const houses = await getHouses();
+async function getApplications(user = null) {
+  const houses = await getHouses(user);
   const houseMap = Object.fromEntries(houses.map((h) => [h.id, h]));
 
   if (usePostgres) {
@@ -601,8 +635,8 @@ async function rejectApplication(id) {
   return true;
 }
 
-async function getPayments() {
-  const tenants = await getTenants();
+async function getPayments(user = null) {
+  const tenants = await getTenants(user);
   const tenantMap = Object.fromEntries(tenants.map((t) => [t.id, t]));
 
   if (usePostgres) {
@@ -867,7 +901,7 @@ async function handleApi(req, res, pathname) {
       return;
     }
 
-    const house = await createHouse({ houseNumber: roomType, rentAmount: price, roomType, location, description, price });
+    const house = await createHouse({ houseNumber: roomType, rentAmount: price, roomType, location, description, price, ownerId: user.id });
     sendJson(res, 201, { house }, req);
     return;
   }
@@ -875,7 +909,7 @@ async function handleApi(req, res, pathname) {
   if (req.method === "GET" && pathname === "/api/houses") {
     const user = await requireAuth(res, req);
     if (!user) return;
-    sendJson(res, 200, { houses: await getHouses() }, req);
+    sendJson(res, 200, { houses: await getHouses(user) }, req);
     return;
   }
 
@@ -899,7 +933,7 @@ async function handleApi(req, res, pathname) {
     }
 
     const [tenants, applications, payments, houses] = await Promise.all([
-      getTenants(), getApplications(), getPayments(), getHouses()
+      getTenants(user), getApplications(user), getPayments(user), getHouses(user)
     ]);
 
     const stats = {
@@ -920,7 +954,7 @@ async function handleApi(req, res, pathname) {
   if (req.method === "GET" && pathname === "/api/tenants") {
     const user = await requireRole(res, req, ["admin", "landlord"]);
     if (!user) return;
-    sendJson(res, 200, { tenants: await getTenants() }, req);
+    sendJson(res, 200, { tenants: await getTenants(user) }, req);
     return;
   }
 
@@ -982,7 +1016,7 @@ async function handleApi(req, res, pathname) {
   if (req.method === "GET" && pathname === "/api/applications") {
     const user = await requireRole(res, req, ["admin", "landlord"]);
     if (!user) return;
-    sendJson(res, 200, { applications: await getApplications() }, req);
+    sendJson(res, 200, { applications: await getApplications(user) }, req);
     return;
   }
 
@@ -1048,7 +1082,7 @@ async function handleApi(req, res, pathname) {
   if (req.method === "GET" && pathname === "/api/payments") {
     const user = await requireRole(res, req, ["admin", "landlord"]);
     if (!user) return;
-    sendJson(res, 200, { payments: await getPayments() }, req);
+    sendJson(res, 200, { payments: await getPayments(user) }, req);
     return;
   }
 
