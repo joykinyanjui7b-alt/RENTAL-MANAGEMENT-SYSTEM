@@ -177,7 +177,10 @@ els.navLinks.forEach((link) => {
 });
 
 async function loadUser() {
-  // Step 1: check auth. If this fails or returns no user, THEN we redirect.
+  // Keep the app hidden until auth is resolved so the flash of the guest
+  // state does not appear while the backend checks the current session.
+  document.body.classList.add("loading");
+
   let data;
   try {
     data = await api("/api/me");
@@ -194,7 +197,8 @@ async function loadUser() {
   state.user = data.user;
   els.userGreeting.textContent = `Hi, ${data.user.fullName}`;
   applyRoleUI(data.user.role);
-  showPanel(data.user.role === "tenant" ? "houses" : "dashboard");
+  showPanel("dashboard");
+  document.body.classList.remove("loading");
 
   // Step 2: load dashboard data. The user is already confirmed logged in,
   // so a failure here (slow backend, brief network blip, Render free-tier

@@ -40,6 +40,11 @@ body.auth-page {
   padding: 24px;
 }
 
+body.loading .app-shell {
+  visibility: hidden;
+  opacity: 0;
+}
+
 .auth-page-inner {
   width: min(100%, 440px);
 }

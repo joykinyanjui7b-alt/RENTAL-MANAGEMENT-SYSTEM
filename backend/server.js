@@ -721,15 +721,22 @@ function sendError(res, statusCode, message, req) {
 
 function readRequestBody(req) {
   return new Promise((resolve, reject) => {
-    let body = "";
+    const chunks = [];
+    let bodyLength = 0;
+
     req.on("data", (chunk) => {
-      body += chunk;
-      if (body.length > 1_000_000) {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
+      chunks.push(buffer);
+      bodyLength += buffer.length;
+
+      if (bodyLength > 1_000_000) {
         reject(new Error("Request body is too large"));
         req.destroy();
       }
     });
+
     req.on("end", () => {
+      const body = Buffer.concat(chunks).toString("utf8").trim();
       if (!body) return resolve({});
       try {
         resolve(JSON.parse(body));
@@ -737,6 +744,7 @@ function readRequestBody(req) {
         reject(new Error("Invalid JSON body"));
       }
     });
+
     req.on("error", reject);
   });
 }
