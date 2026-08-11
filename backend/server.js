@@ -89,6 +89,9 @@ function loadLocalDb() {
   for (const tenant of localDb.tenants) {
     tenant.status = tenant.status || "active";
     tenant.move_out_date = tenant.move_out_date || null;
+    tenant.initial_payment_date = tenant.initial_payment_date || tenant.initialPaymentDate || null;
+    tenant.water_amount = Number(tenant.water_amount ?? tenant.waterAmount ?? 0);
+    tenant.garbage_amount = Number(tenant.garbage_amount ?? tenant.garbageAmount ?? 0);
   }
 
   return localDb;
@@ -147,8 +150,8 @@ async function initDb() {
       );
       CREATE TABLE IF NOT EXISTS houses (
         id text PRIMARY KEY, house_number text NOT NULL, rent_amount numeric NOT NULL,
-        room_type text, location text, description text, price numeric,
-        status text NOT NULL DEFAULT 'vacant'
+        room_type text, house_name text, location text, description text, price numeric,
+        caretaker_name text, caretaker_phone text, status text NOT NULL DEFAULT 'vacant'
       );
       CREATE TABLE IF NOT EXISTS tenants (
         id text PRIMARY KEY, name text NOT NULL, phone text NOT NULL, email text,
@@ -162,16 +165,31 @@ async function initDb() {
       );
       CREATE TABLE IF NOT EXISTS payments (
         id text PRIMARY KEY, tenant_id text REFERENCES tenants(id), amount numeric NOT NULL,
-        payment_date date NOT NULL, balance numeric NOT NULL DEFAULT 0
+        payment_date date NOT NULL, balance numeric NOT NULL DEFAULT 0,
+        rent_amount numeric NOT NULL DEFAULT 0, water_amount numeric NOT NULL DEFAULT 0,
+        garbage_amount numeric NOT NULL DEFAULT 0, total_due numeric NOT NULL DEFAULT 0
+      );
+      CREATE TABLE IF NOT EXISTS water_bills (
+        id text PRIMARY KEY, house_id text REFERENCES houses(id), bill_month text NOT NULL,
+        bill_year integer NOT NULL, reading_date date NOT NULL, previous_reading numeric NOT NULL,
+        current_reading numeric NOT NULL, units_used numeric NOT NULL,
+        water_amount numeric NOT NULL DEFAULT 0, notes text, created_at timestamptz NOT NULL DEFAULT now()
       );
       ALTER TABLE tenants ADD COLUMN IF NOT EXISTS move_out_date date;
       ALTER TABLE tenants ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active';
       ALTER TABLE applications ADD COLUMN IF NOT EXISTS message text;
       ALTER TABLE houses ADD COLUMN IF NOT EXISTS room_type text;
+      ALTER TABLE houses ADD COLUMN IF NOT EXISTS house_name text;
       ALTER TABLE houses ADD COLUMN IF NOT EXISTS location text;
       ALTER TABLE houses ADD COLUMN IF NOT EXISTS description text;
       ALTER TABLE houses ADD COLUMN IF NOT EXISTS price numeric;
+      ALTER TABLE houses ADD COLUMN IF NOT EXISTS caretaker_name text;
+      ALTER TABLE houses ADD COLUMN IF NOT EXISTS caretaker_phone text;
       ALTER TABLE houses ADD COLUMN IF NOT EXISTS owner_id text;
+      ALTER TABLE payments ADD COLUMN IF NOT EXISTS rent_amount numeric NOT NULL DEFAULT 0;
+      ALTER TABLE payments ADD COLUMN IF NOT EXISTS water_amount numeric NOT NULL DEFAULT 0;
+      ALTER TABLE payments ADD COLUMN IF NOT EXISTS garbage_amount numeric NOT NULL DEFAULT 0;
+      ALTER TABLE payments ADD COLUMN IF NOT EXISTS total_due numeric NOT NULL DEFAULT 0;
     `);
   }
 
@@ -185,20 +203,20 @@ async function initDb() {
   await ensureSeedUsers();
 
   if (usePostgres) {
-    const landlordResult = await pool.query("SELECT id FROM users WHERE role = 'landlord' ORDER BY created_at LIMIT 1");
+    const landlordResult = await pool.query("SELECT id FROM users WHERE role IN ('landlord','manager') ORDER BY created_at LIMIT 1");
     const landlordId = landlordResult.rowCount > 0 ? landlordResult.rows[0].id : null;
     if (landlordId) {
       await pool.query("UPDATE houses SET owner_id = $1 WHERE owner_id IS NULL", [landlordId]);
     }
   } else {
     const db = loadLocalDb();
-    const landlord = db.users.find((user) => user.role === "landlord");
-    if (landlord) {
+    const owner = db.users.find((user) => user.role === "landlord" || user.role === "manager");
+    if (owner) {
       let changed = false;
       for (const house of db.houses) {
         if (!house.ownerId && !house.owner_id) {
-          house.ownerId = landlord.id;
-          house.owner_id = landlord.id;
+          house.ownerId = owner.id;
+          house.owner_id = owner.id;
           changed = true;
         }
       }
@@ -267,8 +285,15 @@ async function createUser(email, fullName, role, password) {
 }
 
 async function ensureSeedUsers() {
+  const passwordMap = {
+    "manager@rms.com": "Manager2026!",
+    "landlord@rms.com": "Landlord2026!",
+    "landlord2@rms.com": "Landlord2026!"
+  };
+
   const presentationUsers = [
     ["admin@rms.com", "RMS Administrator", "admin"],
+    ["manager@rms.com", "RMS Manager", "manager"],
     ["landlord@rms.com", "RMS Landlord", "landlord"],
     ["landlord2@rms.com", "Second RMS Landlord", "landlord"],
     ["tenant1@rms.com", "Tenant One", "tenant"],
@@ -283,7 +308,8 @@ async function ensureSeedUsers() {
     if (existing) {
       continue;
     }
-    await createUser(email, fullName, role, "RmsDemo2026!");
+    const password = passwordMap[email] || "RmsDemo2026!";
+    await createUser(email, fullName, role, password);
   }
 }
 
@@ -358,7 +384,8 @@ async function requireAuth(res, req) {
 async function requireRole(res, req, roles) {
   const user = await requireAuth(res, req);
   if (!user) return null;
-  if (!roles.includes(user.role)) {
+  const allowedRoles = roles.includes("landlord") ? [...new Set([...roles, "manager"])] : roles;
+  if (!allowedRoles.includes(user.role)) {
     sendError(res, 403, "You do not have permission to perform this action", req);
     return null;
   }
@@ -371,15 +398,18 @@ async function getHouses(user = null) {
     const houses = result.rows.map((h) => ({
       id: h.id,
       houseNumber: h.house_number,
+      houseName: h.house_name || h.house_number,
       roomType: h.room_type || h.house_number,
       location: h.location || "",
       description: h.description || "",
       rentAmount: Number(h.rent_amount ?? h.price ?? 0),
       price: Number(h.price ?? h.rent_amount ?? 0),
+      caretakerName: h.caretaker_name || "",
+      caretakerPhone: h.caretaker_phone || "",
       status: h.status,
       ownerId: h.owner_id || null
     }));
-    if (user && user.role === "landlord") {
+    if (user && (user.role === "landlord" || user.role === "manager")) {
       return houses.filter((house) => house.ownerId === user.id);
     }
     return houses;
@@ -388,15 +418,18 @@ async function getHouses(user = null) {
   const houses = db.houses.map((h) => ({
     id: h.id,
     houseNumber: h.houseNumber,
+    houseName: h.houseName || h.houseNumber,
     roomType: h.roomType || h.houseNumber,
     location: h.location || "",
     description: h.description || "",
     rentAmount: Number(h.rentAmount ?? h.price ?? 0),
     price: Number(h.price ?? h.rentAmount ?? 0),
+    caretakerName: h.caretakerName || h.caretaker_name || "",
+    caretakerPhone: h.caretakerPhone || h.caretaker_phone || "",
     status: h.status,
     ownerId: h.ownerId || h.owner_id || null
   }));
-  if (user && user.role === "landlord") {
+  if (user && (user.role === "landlord" || user.role === "manager")) {
     return houses.filter((house) => house.ownerId === user.id);
   }
   return houses;
@@ -415,27 +448,30 @@ async function setHouseStatus(houseId, status) {
   }
 }
 
-async function createHouse({ houseNumber, rentAmount, roomType, location, description, price, ownerId }) {
+async function createHouse({ houseNumber, houseName, rentAmount, roomType, location, description, price, caretakerName, caretakerPhone, ownerId }) {
   const id = crypto.randomUUID();
   const numericPrice = Number(price ?? rentAmount);
   const numericRent = Number(rentAmount ?? numericPrice);
-  const roomTitle = String(roomType || houseNumber || "").trim();
+  const roomTitle = String(roomType || houseNumber || houseName || "").trim();
   const house = {
     id,
     houseNumber: roomTitle || String(houseNumber).trim(),
+    houseName: String(houseName || roomTitle || houseNumber || "").trim(),
     roomType: roomTitle || String(houseNumber).trim(),
     location: String(location || "").trim(),
     description: String(description || "").trim(),
     rentAmount: numericRent,
     price: numericPrice,
+    caretakerName: String(caretakerName || "").trim(),
+    caretakerPhone: String(caretakerPhone || "").trim(),
     status: "vacant",
     ownerId: ownerId || null
   };
 
   if (usePostgres) {
     await pool.query(
-      "INSERT INTO houses (id, house_number, rent_amount, room_type, location, description, price, status, owner_id) VALUES ($1,$2,$3,$4,$5,$6,$7,'vacant',$8)",
-      [id, house.houseNumber, house.rentAmount, house.roomType, house.location, house.description, house.price, house.ownerId]
+      "INSERT INTO houses (id, house_number, house_name, rent_amount, room_type, location, description, price, caretaker_name, caretaker_phone, status, owner_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'vacant',$11)",
+      [id, house.houseNumber, house.houseName, house.rentAmount, house.roomType, house.location, house.description, house.price, house.caretakerName, house.caretakerPhone, house.ownerId]
     );
   } else {
     const db = loadLocalDb();
@@ -549,13 +585,19 @@ async function deleteTenant(id) {
 async function getApplications(user = null) {
   const houses = await getHouses(user);
   const houseMap = Object.fromEntries(houses.map((h) => [h.id, h]));
+  const allowedHouseIds = new Set(Object.keys(houseMap));
 
   if (usePostgres) {
     const result = await pool.query("SELECT * FROM applications ORDER BY date_applied DESC");
-    return result.rows.map((a) => mapApplication(a, houseMap));
+    return result.rows
+      .filter((a) => allowedHouseIds.has(a.house_id))
+      .map((a) => mapApplication(a, houseMap));
   }
   const db = loadLocalDb();
-  return [...db.applications].sort((a, b) => new Date(b.date_applied) - new Date(a.date_applied)).map((a) => mapApplication(a, houseMap));
+  return [...db.applications]
+    .sort((a, b) => new Date(b.date_applied) - new Date(a.date_applied))
+    .filter((a) => allowedHouseIds.has(a.house_id))
+    .map((a) => mapApplication(a, houseMap));
 }
 
 function mapApplication(a, houseMap) {
@@ -638,43 +680,56 @@ async function rejectApplication(id) {
 async function getPayments(user = null) {
   const tenants = await getTenants(user);
   const tenantMap = Object.fromEntries(tenants.map((t) => [t.id, t]));
+  const allowedTenantIds = new Set(Object.keys(tenantMap));
 
   if (usePostgres) {
     const result = await pool.query("SELECT * FROM payments ORDER BY payment_date DESC");
-    return result.rows.map((p) => mapPayment(p, tenantMap));
+    return result.rows
+      .filter((p) => allowedTenantIds.has(p.tenant_id))
+      .map((p) => mapPayment(p, tenantMap));
   }
   const db = loadLocalDb();
-  return [...db.payments].sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date)).map((p) => mapPayment(p, tenantMap));
+  return [...db.payments]
+    .filter((p) => allowedTenantIds.has(p.tenant_id))
+    .sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date))
+    .map((p) => mapPayment(p, tenantMap));
 }
 
-function mapPayment(p, tenantMap) {
-  const tenant = tenantMap[p.tenant_id || p.tenantId] || {};
-  return {
-    id: p.id,
-    tenantId: p.tenant_id || p.tenantId,
-    tenantName: tenant.name || "Unknown tenant",
-    houseNumber: tenant.houseNumber || "",
-    amount: Number(p.amount),
-    paymentDate: p.payment_date || p.paymentDate,
-    balance: Number(p.balance)
-  };
-}
-
-async function createPayment({ tenantId, amount, paymentDate }) {
+async function createPayment({ tenantId, amount, paymentDate, rentAmount = 0, waterAmount = 0, garbageAmount = 0 }) {
   const tenants = await getTenants();
   const tenant = tenants.find((t) => t.id === tenantId);
   const houses = await getHouses();
   const house = houses.find((h) => h.id === (tenant && tenant.houseId));
-  const rentAmount = house ? house.rentAmount : 0;
-  const balance = Math.max(rentAmount - Number(amount), 0);
+  const effectiveRent = Number(rentAmount || (house ? house.rentAmount : 0));
+  const effectiveWater = Number(waterAmount || 0);
+  const effectiveGarbage = Number(garbageAmount || 0);
+  const totalDue = effectiveRent + effectiveWater + effectiveGarbage;
+  const paidAmount = Number(amount);
+  const balance = Math.max(totalDue - paidAmount, 0);
 
   const id = crypto.randomUUID();
-  const record = { id, tenant_id: tenantId, tenantId, amount: Number(amount), payment_date: paymentDate, paymentDate, balance };
+  const record = {
+    id,
+    tenant_id: tenantId,
+    tenantId,
+    amount: paidAmount,
+    payment_date: paymentDate,
+    paymentDate,
+    balance,
+    rent_amount: effectiveRent,
+    rentAmount: effectiveRent,
+    water_amount: effectiveWater,
+    waterAmount: effectiveWater,
+    garbage_amount: effectiveGarbage,
+    garbageAmount: effectiveGarbage,
+    total_due: totalDue,
+    totalDue
+  };
 
   if (usePostgres) {
     await pool.query(
-      "INSERT INTO payments (id, tenant_id, amount, payment_date, balance) VALUES ($1,$2,$3,$4,$5)",
-      [id, tenantId, amount, paymentDate, balance]
+      "INSERT INTO payments (id, tenant_id, amount, payment_date, balance, rent_amount, water_amount, garbage_amount, total_due) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+      [id, tenantId, paidAmount, paymentDate, balance, effectiveRent, effectiveWater, effectiveGarbage, totalDue]
     );
   } else {
     const db = loadLocalDb();
@@ -690,6 +745,87 @@ async function createPayment({ tenantId, amount, paymentDate }) {
       t.rentStatus = t.rent_status;
       saveLocalDb();
     }
+  }
+
+  return record;
+}
+
+async function getWaterBills(user = null) {
+  const houses = await getHouses(user);
+  const houseMap = Object.fromEntries(houses.map((h) => [h.id, h]));
+  const allowedHouseIds = new Set(Object.keys(houseMap));
+
+  if (usePostgres) {
+    const result = await pool.query("SELECT * FROM water_bills ORDER BY created_at DESC");
+    return result.rows
+      .filter((bill) => allowedHouseIds.has(bill.house_id))
+      .map((bill) => mapWaterBill(bill, houseMap));
+  }
+
+  const db = loadLocalDb();
+  return [...db.water_bills || []]
+    .filter((bill) => allowedHouseIds.has(bill.house_id))
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .map((bill) => mapWaterBill(bill, houseMap));
+}
+
+function mapWaterBill(bill, houseMap) {
+  const house = houseMap[bill.house_id || bill.houseId] || {};
+  return {
+    id: bill.id,
+    houseId: bill.house_id || bill.houseId,
+    houseNumber: house.houseNumber || "Unknown",
+    houseName: house.houseName || house.houseNumber || "",
+    billMonth: bill.bill_month || bill.billMonth,
+    billYear: bill.bill_year || bill.billYear,
+    readingDate: bill.reading_date || bill.readingDate,
+    previousReading: Number(bill.previous_reading ?? bill.previousReading ?? 0),
+    currentReading: Number(bill.current_reading ?? bill.currentReading ?? 0),
+    unitsUsed: Number(bill.units_used ?? bill.unitsUsed ?? 0),
+    waterAmount: Number(bill.water_amount ?? bill.waterAmount ?? 0),
+    notes: bill.notes || "",
+    createdAt: bill.created_at || bill.createdAt
+  };
+}
+
+async function createWaterBill({ houseId, billMonth, billYear, readingDate, previousReading, currentReading, waterAmount = 0, notes }) {
+  const id = crypto.randomUUID();
+  const unitsUsed = Number(currentReading) - Number(previousReading);
+  const normalizedUnits = Number.isFinite(unitsUsed) && unitsUsed >= 0 ? unitsUsed : 0;
+  const normalizedWater = Number(waterAmount) || normalizedUnits * 30;
+  const record = {
+    id,
+    house_id: houseId,
+    houseId,
+    bill_month: billMonth,
+    billMonth,
+    bill_year: Number(billYear),
+    billYear: Number(billYear),
+    reading_date: readingDate,
+    readingDate,
+    previous_reading: Number(previousReading),
+    previousReading: Number(previousReading),
+    current_reading: Number(currentReading),
+    currentReading: Number(currentReading),
+    units_used: normalizedUnits,
+    unitsUsed: normalizedUnits,
+    water_amount: normalizedWater,
+    waterAmount: normalizedWater,
+    notes: notes || "",
+    created_at: new Date().toISOString(),
+    createdAt: new Date().toISOString()
+  };
+
+  if (usePostgres) {
+    await pool.query(
+      "INSERT INTO water_bills (id, house_id, bill_month, bill_year, reading_date, previous_reading, current_reading, units_used, water_amount, notes, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,now())",
+      [id, houseId, billMonth, Number(billYear), readingDate, Number(previousReading), Number(currentReading), normalizedUnits, normalizedWater, notes || ""]
+    );
+  } else {
+    const db = loadLocalDb();
+    if (!Array.isArray(db.water_bills)) db.water_bills = [];
+    db.water_bills.push(record);
+    saveLocalDb();
   }
 
   return record;
@@ -829,7 +965,7 @@ async function handleApi(req, res, pathname) {
     const body = await readRequestBody(req);
     const email = String(body.email || "").trim().toLowerCase();
     const fullName = String(body.fullName || "").trim();
-    const requestedRole = String(body.role || "landlord").trim();
+    const requestedRole = String(body.role || "landlord").trim().toLowerCase();
     const password = String(body.password || "");
 
     if (!email || !fullName || !password) {
@@ -841,7 +977,7 @@ async function handleApi(req, res, pathname) {
       return;
     }
 
-    const role = requestedRole === "tenant" ? "tenant" : "landlord";
+    const role = requestedRole === "tenant" ? "tenant" : requestedRole === "manager" ? "manager" : "landlord";
     const user = await createUser(email, fullName, role, password);
     const token = await createSession(user.id);
     sendSessionCookie(res, token, req);
@@ -901,7 +1037,18 @@ async function handleApi(req, res, pathname) {
       return;
     }
 
-    const house = await createHouse({ houseNumber: roomType, rentAmount: price, roomType, location, description, price, ownerId: user.id });
+    const house = await createHouse({
+      houseNumber: roomType,
+      houseName: body.houseName,
+      rentAmount: price,
+      roomType,
+      location,
+      description,
+      price,
+      caretakerName: body.caretakerName,
+      caretakerPhone: body.caretakerPhone,
+      ownerId: user.id
+    });
     sendJson(res, 201, { house }, req);
     return;
   }
@@ -1094,8 +1241,43 @@ async function handleApi(req, res, pathname) {
       sendError(res, 400, "Tenant, amount, and payment date are required", req);
       return;
     }
-    const payment = await createPayment(body);
+    const payment = await createPayment({
+      tenantId: body.tenantId,
+      amount: body.amount,
+      paymentDate: body.paymentDate,
+      waterAmount: body.waterAmount,
+      garbageAmount: body.garbageAmount
+    });
     sendJson(res, 201, payment, req);
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/api/water-bills") {
+    const user = await requireRole(res, req, ["admin", "landlord"]);
+    if (!user) return;
+    sendJson(res, 200, { waterBills: await getWaterBills(user) }, req);
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/api/water-bills") {
+    const user = await requireRole(res, req, ["admin", "landlord"]);
+    if (!user) return;
+    const body = await readRequestBody(req);
+    if (!body.houseId || !body.billMonth || !body.billYear || !body.readingDate || body.previousReading === undefined || body.currentReading === undefined) {
+      sendError(res, 400, "House, month, year, reading date, previous reading, and current reading are required", req);
+      return;
+    }
+    const waterBill = await createWaterBill({
+      houseId: body.houseId,
+      billMonth: body.billMonth,
+      billYear: body.billYear,
+      readingDate: body.readingDate,
+      previousReading: body.previousReading,
+      currentReading: body.currentReading,
+      waterAmount: body.waterAmount,
+      notes: body.notes
+    });
+    sendJson(res, 201, waterBill, req);
     return;
   }
 

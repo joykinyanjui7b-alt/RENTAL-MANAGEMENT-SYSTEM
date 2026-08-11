@@ -11,6 +11,7 @@ const state = {
   applications: [],
   payments: [],
   houses: [],
+  waterBills: [],
   applicationStatusFilter: "",
   tenantSearch: ""
 };
@@ -29,6 +30,22 @@ const els = {
   myApplicationsTable: document.querySelector("#myApplicationsTable"),
   browseHousesButton: document.querySelector("#browseHousesButton"),
   userTable: document.querySelector("#userTable"),
+  houseNameInput: document.querySelector("#houseNameInput"),
+  houseCaretakerNameInput: document.querySelector("#houseCaretakerNameInput"),
+  houseCaretakerPhoneInput: document.querySelector("#houseCaretakerPhoneInput"),
+  newWaterBillButton: document.querySelector("#newWaterBillButton"),
+  waterBillTable: document.querySelector("#waterBillTable"),
+  waterBillDialog: document.querySelector("#waterBillDialog"),
+  waterBillForm: document.querySelector("#waterBillForm"),
+  waterBillHouseInput: document.querySelector("#waterBillHouseInput"),
+  waterBillMonthInput: document.querySelector("#waterBillMonthInput"),
+  waterBillYearInput: document.querySelector("#waterBillYearInput"),
+  waterBillReadingDateInput: document.querySelector("#waterBillReadingDateInput"),
+  waterBillPreviousInput: document.querySelector("#waterBillPreviousInput"),
+  waterBillCurrentInput: document.querySelector("#waterBillCurrentInput"),
+  waterBillAmountInput: document.querySelector("#waterBillAmountInput"),
+  waterBillNotesInput: document.querySelector("#waterBillNotesInput"),
+  closeWaterBillDialogButton: document.querySelector("#closeWaterBillDialogButton"),
 
   stats: document.querySelector("#stats"),
   recentApplicationsTable: document.querySelector("#recentApplicationsTable"),
@@ -156,6 +173,7 @@ function showPanel(name) {
     tenants: "Tenant Records",
     applications: "Applications",
     payments: "Payments",
+    "water-bills": "Water bills",
     reports: "Reports",
     users: "User Access"
   };
@@ -164,6 +182,7 @@ function showPanel(name) {
   if (name === "tenants") loadTenants();
   if (name === "applications") loadApplications();
   if (name === "payments") loadPayments();
+  if (name === "water-bills") loadWaterBills();
   if (name === "houses") renderTenantHouses();
   if (name === "my-applications") loadMyApplications();
   if (name === "users") loadUsers();
@@ -212,17 +231,17 @@ async function loadUser() {
 }
 
 function applyRoleUI(role) {
-  const labels = { admin: "Admin workspace", landlord: "Landlord workspace", tenant: "Tenant workspace" };
+  const labels = { admin: "Admin workspace", landlord: "Landlord workspace", manager: "Manager workspace", tenant: "Tenant workspace" };
   els.workspaceLabel.textContent = labels[role] || "Rental workspace";
   els.navLinks.forEach((link) => {
     const roles = (link.dataset.roles || "").split(",");
     link.hidden = !roles.includes(role);
   });
   if (els.landlordHousePanel) {
-    els.landlordHousePanel.hidden = role !== "landlord";
+    els.landlordHousePanel.hidden = !(role === "landlord" || role === "manager");
   }
   if (role === "tenant") {
-    document.querySelectorAll("#panel-tenants, #panel-applications, #panel-payments, #panel-reports, #panel-users").forEach((panel) => {
+    document.querySelectorAll("#panel-tenants, #panel-applications, #panel-payments, #panel-reports, #panel-water-bills, #panel-users").forEach((panel) => {
       panel.hidden = true;
     });
   }
@@ -239,11 +258,11 @@ function renderLandlordHouses() {
     .map((house) => `
       <tr>
         <td>
-          <strong>${escapeHtml(house.roomType || house.houseNumber)}</strong>
+          <strong>${escapeHtml(house.houseName || house.roomType || house.houseNumber)}</strong>
           <p>${escapeHtml(house.location || "Location not set")}</p>
         </td>
         <td>${formatMoney(house.rentAmount || house.price || 0)}</td>
-        <td>${escapeHtml(house.description || "No description added yet")}</td>
+        <td>${escapeHtml(house.caretakerName ? `${house.caretakerName}${house.caretakerPhone ? ` • ${house.caretakerPhone}` : ""}` : "No caretaker assigned")}</td>
         <td><span class="pill ${house.status === "vacant" ? "approved" : "blocked"}">${escapeHtml(house.status || "vacant")}</span></td>
       </tr>
     `)
@@ -278,9 +297,12 @@ els.houseForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const payload = {
     roomType: els.houseRoomTypeInput.value.trim(),
+    houseName: els.houseNameInput.value.trim(),
     location: els.houseLocationInput.value.trim(),
     price: Number(els.housePriceInput.value),
-    description: els.houseDescriptionInput.value.trim()
+    description: els.houseDescriptionInput.value.trim(),
+    caretakerName: els.houseCaretakerNameInput.value.trim(),
+    caretakerPhone: els.houseCaretakerPhoneInput.value.trim()
   };
   await api("/api/houses", { method: "POST", body: JSON.stringify(payload) });
   els.houseDialog.close();
@@ -293,15 +315,17 @@ async function loadHouses() {
   const data = await api("/api/houses");
   state.houses = data.houses || [];
   const options = state.houses
-    .map((h) => `<option value="${h.id}">${escapeHtml(h.houseNumber)}</option>`)
+    .map((h) => `<option value="${h.id}">${escapeHtml(h.houseName || h.houseNumber)}</option>`)
     .join("");
   els.tenantHouseInput.innerHTML = options;
   els.tenantApplicationHouseInput.innerHTML = state.houses
     .filter((house) => house.status === "vacant")
-    .map((house) => `<option value="${house.id}">${escapeHtml(house.roomType || house.houseNumber)} • ${escapeHtml(house.location || "Location not set")} • ${formatMoney(house.rentAmount || house.price || 0)}</option>`)
+    .map((house) => `<option value="${house.id}">${escapeHtml(house.houseName || house.roomType || house.houseNumber)} • ${escapeHtml(house.location || "Location not set")} • ${formatMoney(house.rentAmount || house.price || 0)}</option>`)
     .join("");
+  els.waterBillHouseInput.innerHTML = options;
   renderLandlordHouses();
   renderTenantHouses();
+  renderWaterBills();
 }
 
 async function loadDashboard() {
@@ -593,18 +617,18 @@ async function loadPayments() {
   renderPayments();
 
   const options = state.tenants.length
-    ? state.tenants.map((t) => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join("")
+    ? state.tenants.map((t) => `<option value="${t.id}">${escapeHtml(t.name)} • ${escapeHtml(t.houseNumber)}</option>`).join("")
     : (await (async () => {
         const tData = await api("/api/tenants");
         state.tenants = tData.tenants || [];
-        return state.tenants.map((t) => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join("");
+        return state.tenants.map((t) => `<option value="${t.id}">${escapeHtml(t.name)} • ${escapeHtml(t.houseNumber)}</option>`).join("");
       })());
   els.paymentTenantInput.innerHTML = options;
 }
 
 function renderPayments() {
   if (state.payments.length === 0) {
-    els.paymentTable.innerHTML = `<tr><td colspan="4"><div class="empty-state">No payments recorded yet.</div></td></tr>`;
+    els.paymentTable.innerHTML = `<tr><td colspan="8"><div class="empty-state">No payments recorded yet.</div></td></tr>`;
     return;
   }
 
@@ -612,9 +636,40 @@ function renderPayments() {
     .map((p) => `
       <tr>
         <td>${escapeHtml(p.tenantName)}</td>
+        <td>${escapeHtml(p.houseNumber)}</td>
         <td>${formatMoney(p.amount)}</td>
-        <td>${formatDate(p.paymentDate)}</td>
+        <td>${formatMoney(p.rentAmount)}</td>
+        <td>${formatMoney(p.waterAmount)}</td>
+        <td>${formatMoney(p.garbageAmount)}</td>
+        <td>${formatMoney(p.totalDue)}</td>
         <td>${formatMoney(p.balance)}</td>
+      </tr>
+    `)
+    .join("");
+}
+
+async function loadWaterBills() {
+  const data = await api("/api/water-bills");
+  state.waterBills = data.waterBills || [];
+  renderWaterBills();
+}
+
+function renderWaterBills() {
+  if (!els.waterBillTable) return;
+  if (!state.waterBills.length) {
+    els.waterBillTable.innerHTML = `<tr><td colspan="6"><div class="empty-state">No water bills logged yet.</div></td></tr>`;
+    return;
+  }
+
+  els.waterBillTable.innerHTML = state.waterBills
+    .map((bill) => `
+      <tr>
+        <td>${escapeHtml(bill.houseName || bill.houseNumber)}</td>
+        <td>${escapeHtml(`${bill.billMonth || ""} ${bill.billYear || ""}`)}</td>
+        <td>${formatDate(bill.readingDate)}</td>
+        <td>${escapeHtml(bill.unitsUsed.toString())}</td>
+        <td>${formatMoney(bill.waterAmount)}</td>
+        <td>${escapeHtml(bill.notes || "")}</td>
       </tr>
     `)
     .join("");
@@ -625,6 +680,13 @@ els.newPaymentButton.addEventListener("click", () => {
   els.paymentDialog.showModal();
 });
 
+els.newWaterBillButton?.addEventListener("click", () => {
+  els.waterBillForm.reset();
+  els.waterBillDialog.showModal();
+});
+
+els.closeWaterBillDialogButton?.addEventListener("click", () => els.waterBillDialog.close());
+
 els.closePaymentDialogButton.addEventListener("click", () => els.paymentDialog.close());
 
 els.paymentForm.addEventListener("submit", async (event) => {
@@ -632,12 +694,32 @@ els.paymentForm.addEventListener("submit", async (event) => {
   const payload = {
     tenantId: els.paymentTenantInput.value,
     amount: els.paymentAmountInput.value,
-    paymentDate: els.paymentDateInput.value
+    paymentDate: els.paymentDateInput.value,
+    waterAmount: Number(els.paymentWaterInput.value || 0),
+    garbageAmount: Number(els.paymentGarbageInput.value || 0)
   };
   await api("/api/payments", { method: "POST", body: JSON.stringify(payload) });
   els.paymentDialog.close();
   showToast("Payment recorded");
   await loadPayments();
+});
+
+els.waterBillForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const payload = {
+    houseId: els.waterBillHouseInput.value,
+    billMonth: els.waterBillMonthInput.value.trim(),
+    billYear: Number(els.waterBillYearInput.value),
+    readingDate: els.waterBillReadingDateInput.value,
+    previousReading: Number(els.waterBillPreviousInput.value),
+    currentReading: Number(els.waterBillCurrentInput.value),
+    waterAmount: Number(els.waterBillAmountInput.value || 0),
+    notes: els.waterBillNotesInput.value.trim()
+  };
+  await api("/api/water-bills", { method: "POST", body: JSON.stringify(payload) });
+  els.waterBillDialog.close();
+  showToast("Water bill logged");
+  await loadWaterBills();
 });
 
 els.reportForm.addEventListener("submit", async (event) => {

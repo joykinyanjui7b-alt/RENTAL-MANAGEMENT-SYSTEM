@@ -13,7 +13,7 @@
       "email": "landlord@rms.com",
       "full_name": "RMS Landlord",
       "role": "landlord",
-      "password_hash": "74f4e84345093017faa13e9a67f62b7c:5f7b69afebf505e3b01c4a5f53d1fe09166b4e202d61afb8bf8c4a727608f984",
+      "password_hash": "00000000000000000000000000000000:d8ca0fcab1bfda6cf4ba91f8c24e75c576d7613dc9c826d3525b774c12875120",
       "created_at": "2026-07-22T10:57:14.415Z"
     },
     {
@@ -63,6 +63,22 @@
       "role": "tenant",
       "password_hash": "bdef327e5d41b677df011da4c671a86c:e66ecc0bc58ba0d2eb6c690da4bef20fcfe5207b2bba002395e139e761fe9d18",
       "created_at": "2026-07-22T10:57:16.381Z"
+    },
+    {
+      "id": "9be22a55-9d7b-4ddb-b7e2-81e488e2bb88",
+      "email": "manager@rms.com",
+      "full_name": "RMS Manager",
+      "role": "manager",
+      "password_hash": "11111111111111111111111111111111:1ea4d07a132b5cc433ef85726d343487b2ebeb6af2eca9dca81552370293359d",
+      "created_at": "2026-08-11T13:49:17.930Z"
+    },
+    {
+      "id": "8b653831-d9d3-4b85-8956-7ee880169840",
+      "email": "testuser@example.com",
+      "full_name": "Test User",
+      "role": "landlord",
+      "password_hash": "d0110f22a8a393ce3919cb6bcc9763b7:903fd18f6c592d1d3924a657fc4287cf5dc3d7383072518ade9f60cdbab06d7c",
+      "created_at": "2026-08-11T13:49:20.138Z"
     }
   ],
   "sessions": [
@@ -335,6 +351,12 @@
       "user_id": "29a31b1e-7212-426a-ad00-61b6202f2f61",
       "expires_at": "2026-08-01T13:24:57.904Z",
       "created_at": "2026-07-25T13:24:58.667Z"
+    },
+    {
+      "token": "d72382dd66602f9012dd53e3606e4ae74ed4140e930720b8dc33c59ef7c90fd5",
+      "user_id": "8b653831-d9d3-4b85-8956-7ee880169840",
+      "expires_at": "2026-08-18T13:49:20.141Z",
+      "created_at": "2026-08-11T13:49:20.142Z"
     }
   ],
   "houses": [
@@ -342,19 +364,25 @@
       "id": "14750108-e392-4fe3-a726-0c338cc63727",
       "houseNumber": "A-101",
       "rentAmount": 12000,
-      "status": "occupied"
+      "status": "occupied",
+      "ownerId": "29a31b1e-7212-426a-ad00-61b6202f2f61",
+      "owner_id": "29a31b1e-7212-426a-ad00-61b6202f2f61"
     },
     {
       "id": "d0d88ea7-92d7-4f20-9a71-be1ccb4927a0",
       "houseNumber": "B-203",
       "rentAmount": 10000,
-      "status": "occupied"
+      "status": "occupied",
+      "ownerId": "29a31b1e-7212-426a-ad00-61b6202f2f61",
+      "owner_id": "29a31b1e-7212-426a-ad00-61b6202f2f61"
     },
     {
       "id": "48c36676-7287-4b8d-92f0-ee5a98ab1e86",
       "houseNumber": "D-510",
       "rentAmount": 16000,
-      "status": "occupied"
+      "status": "occupied",
+      "ownerId": "29a31b1e-7212-426a-ad00-61b6202f2f61",
+      "owner_id": "29a31b1e-7212-426a-ad00-61b6202f2f61"
     },
     {
       "id": "782ec949-4d8d-479e-833c-4a3dfdda7952",
@@ -364,7 +392,9 @@
       "description": "Single room available with shared bathroom and Wi-Fi.",
       "rentAmount": 3000,
       "price": 3000,
-      "status": "vacant"
+      "status": "vacant",
+      "ownerId": "29a31b1e-7212-426a-ad00-61b6202f2f61",
+      "owner_id": "29a31b1e-7212-426a-ad00-61b6202f2f61"
     }
   ],
   "tenants": [
@@ -383,7 +413,10 @@
       "rent_status": "unpaid",
       "rentStatus": "unpaid",
       "created_at": "2026-07-23T11:42:55.990Z",
-      "createdAt": "2026-07-23T11:42:55.990Z"
+      "createdAt": "2026-07-23T11:42:55.990Z",
+      "initial_payment_date": null,
+      "water_amount": 0,
+      "garbage_amount": 0
     },
     {
       "id": "2046e571-ca2a-4257-9bf6-3cf6cb1f6712",
@@ -400,7 +433,10 @@
       "rent_status": "unpaid",
       "rentStatus": "unpaid",
       "created_at": "2026-07-23T11:44:03.029Z",
-      "createdAt": "2026-07-23T11:44:03.029Z"
+      "createdAt": "2026-07-23T11:44:03.029Z",
+      "initial_payment_date": null,
+      "water_amount": 0,
+      "garbage_amount": 0
     },
     {
       "id": "7c94e7dc-f7ae-4f71-b3ad-379fb54f946c",
@@ -417,7 +453,10 @@
       "rent_status": "unpaid",
       "rentStatus": "unpaid",
       "created_at": "2026-07-23T11:44:42.466Z",
-      "createdAt": "2026-07-23T11:44:42.466Z"
+      "createdAt": "2026-07-23T11:44:42.466Z",
+      "initial_payment_date": null,
+      "water_amount": 0,
+      "garbage_amount": 0
     }
   ],
   "applications": [

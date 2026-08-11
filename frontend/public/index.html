@@ -17,13 +17,14 @@
           </div>
         </div>
         <nav class="nav-list" aria-label="Main navigation">
-          <a class="active" href="#dashboard" data-panel="dashboard" data-roles="admin,landlord,tenant">Dashboard</a>
+          <a class="active" href="#dashboard" data-panel="dashboard" data-roles="admin,landlord,manager,tenant">Dashboard</a>
           <a href="#houses" data-panel="houses" data-roles="tenant">Available Houses</a>
           <a href="#my-applications" data-panel="my-applications" data-roles="tenant">My Applications</a>
-          <a href="#tenants" data-panel="tenants" data-roles="admin,landlord">Tenant Records</a>
-          <a href="#applications" data-panel="applications" data-roles="admin,landlord">Applications</a>
-          <a href="#payments" data-panel="payments" data-roles="admin,landlord">Payments</a>
-          <a href="#reports" data-panel="reports" data-roles="admin,landlord">Reports</a>
+          <a href="#tenants" data-panel="tenants" data-roles="admin,landlord,manager">Tenant Records</a>
+          <a href="#applications" data-panel="applications" data-roles="admin,landlord,manager">Applications</a>
+          <a href="#payments" data-panel="payments" data-roles="admin,landlord,manager">Payments</a>
+          <a href="#water-bills" data-panel="water-bills" data-roles="admin,landlord,manager">Water bills</a>
+          <a href="#reports" data-panel="reports" data-roles="admin,landlord,manager">Reports</a>
           <a href="#users" data-panel="users" data-roles="admin">User Access</a>
         </nav>
       </aside>
@@ -56,9 +57,9 @@
               <table>
                 <thead>
                   <tr>
-                    <th>Room</th>
+                    <th>House</th>
                     <th>Price</th>
-                    <th>Description</th>
+                    <th>Caregiver</th>
                     <th>Status</th>
                   </tr>
                 </thead>
@@ -171,12 +172,43 @@
                 <thead>
                   <tr>
                     <th>Tenant</th>
-                    <th>Amount paid</th>
-                    <th>Date</th>
+                    <th>House</th>
+                    <th>Paid</th>
+                    <th>Rent</th>
+                    <th>Water</th>
+                    <th>Garbage</th>
+                    <th>Total due</th>
                     <th>Balance</th>
                   </tr>
                 </thead>
                 <tbody id="paymentTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="view-panel" id="panel-water-bills" hidden>
+          <div class="panel document-panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Service management</p>
+                <h2>Water readings</h2>
+              </div>
+              <button class="primary-button" id="newWaterBillButton" type="button">+ Log water bill</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>House</th>
+                    <th>Month</th>
+                    <th>Reading date</th>
+                    <th>Units used</th>
+                    <th>Amount</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="waterBillTable"></tbody>
               </table>
             </div>
           </div>
@@ -320,6 +352,10 @@
           <input id="houseRoomTypeInput" placeholder="e.g. One bedroom, Bedsitter, Single room" required>
         </label>
         <label>
+          <span>House name</span>
+          <input id="houseNameInput" placeholder="e.g. Kwa Baine, Main house">
+        </label>
+        <label>
           <span>Location</span>
           <input id="houseLocationInput" placeholder="e.g. Along Thika Road">
         </label>
@@ -327,6 +363,16 @@
           <label>
             <span>Price</span>
             <input id="housePriceInput" type="number" min="0" step="1" required>
+          </label>
+          <label>
+            <span>Caregiver name</span>
+            <input id="houseCaretakerNameInput" placeholder="e.g. Joyce">
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            <span>Caregiver phone</span>
+            <input id="houseCaretakerPhoneInput" placeholder="e.g. 0712 345 678">
           </label>
           <label>
             <span>Brief description</span>
@@ -397,8 +443,71 @@
             <input id="paymentDateInput" type="date" required>
           </label>
         </div>
+        <div class="form-row">
+          <label>
+            <span>Water amount</span>
+            <input id="paymentWaterInput" type="number" min="0" step="1" value="0">
+          </label>
+          <label>
+            <span>Garbage fee</span>
+            <input id="paymentGarbageInput" type="number" min="0" step="1" value="0">
+          </label>
+        </div>
         <div class="modal-actions">
           <button class="primary-button" type="submit">Save payment</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="waterBillDialog">
+      <form id="waterBillForm" method="dialog" class="document-form">
+        <div class="modal-header">
+          <div>
+            <p class="eyebrow">Water bill</p>
+            <h2>Log water reading</h2>
+          </div>
+          <button class="ghost-button icon-button" id="closeWaterBillDialogButton" type="button" aria-label="Close">x</button>
+        </div>
+        <label>
+          <span>House</span>
+          <select id="waterBillHouseInput" required></select>
+        </label>
+        <div class="form-row">
+          <label>
+            <span>Bill month</span>
+            <input id="waterBillMonthInput" type="text" placeholder="e.g. Dec" required>
+          </label>
+          <label>
+            <span>Year</span>
+            <input id="waterBillYearInput" type="number" min="2023" required>
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            <span>Reading date</span>
+            <input id="waterBillReadingDateInput" type="date" required>
+          </label>
+          <label>
+            <span>Previous reading</span>
+            <input id="waterBillPreviousInput" type="number" min="0" step="1" required>
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            <span>Current reading</span>
+            <input id="waterBillCurrentInput" type="number" min="0" step="1" required>
+          </label>
+          <label>
+            <span>Water amount</span>
+            <input id="waterBillAmountInput" type="number" min="0" step="1" placeholder="Optional - auto-calculated" value="0">
+          </label>
+        </div>
+        <label>
+          <span>Notes</span>
+          <textarea id="waterBillNotesInput" rows="3" placeholder="Optional notes"></textarea>
+        </label>
+        <div class="modal-actions">
+          <button class="primary-button" type="submit">Save water bill</button>
         </div>
       </form>
     </dialog>
