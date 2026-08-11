@@ -292,7 +292,6 @@ async function ensureSeedUsers() {
   };
 
   const presentationUsers = [
-    ["admin@rms.com", "RMS Administrator", "admin"],
     ["manager@rms.com", "RMS Manager", "manager"],
     ["landlord@rms.com", "RMS Landlord", "landlord"],
     ["landlord2@rms.com", "Second RMS Landlord", "landlord"],
@@ -977,7 +976,7 @@ async function handleApi(req, res, pathname) {
       return;
     }
 
-    const role = requestedRole === "tenant" ? "tenant" : requestedRole === "manager" ? "manager" : "landlord";
+    const role = requestedRole === "caretaker" ? "caretaker" : "tenant";
     const user = await createUser(email, fullName, role, password);
     const token = await createSession(user.id);
     sendSessionCookie(res, token, req);
@@ -1018,7 +1017,7 @@ async function handleApi(req, res, pathname) {
   }
 
   if (req.method === "POST" && pathname === "/api/houses") {
-    const user = await requireRole(res, req, ["admin", "landlord"]);
+    const user = await requireRole(res, req, ["manager", "landlord"]);
     if (!user) return;
     const body = await readRequestBody(req);
     const roomType = String(body.roomType || body.houseNumber || body.room_type || "").trim();
@@ -1099,21 +1098,21 @@ async function handleApi(req, res, pathname) {
   }
 
   if (req.method === "GET" && pathname === "/api/tenants") {
-    const user = await requireRole(res, req, ["admin", "landlord"]);
+    const user = await requireRole(res, req, ["manager", "landlord"]);
     if (!user) return;
     sendJson(res, 200, { tenants: await getTenants(user) }, req);
     return;
   }
 
   if (req.method === "GET" && pathname === "/api/users") {
-    const user = await requireRole(res, req, ["admin"]);
+    const user = await requireRole(res, req, ["manager"]);
     if (!user) return;
     sendJson(res, 200, { users: await getUsers() }, req);
     return;
   }
 
   if (req.method === "POST" && pathname === "/api/tenants") {
-    const user = await requireRole(res, req, ["admin", "landlord"]);
+    const user = await requireRole(res, req, ["manager", "landlord"]);
     if (!user) return;
     const body = await readRequestBody(req);
     if (!body.name || !body.phone || !body.houseId) {
@@ -1131,7 +1130,7 @@ async function handleApi(req, res, pathname) {
   }
 
   if (req.method === "PUT" && matchTenant) {
-    const user = await requireRole(res, req, ["admin", "landlord"]);
+    const user = await requireRole(res, req, ["manager", "landlord"]);
     if (!user) return;
     const body = await readRequestBody(req);
     const assignedTenant = (await getTenants()).find((tenant) => tenant.houseId === body.houseId && tenant.status === "active" && String(tenant.id) !== matchTenant[1]);
@@ -1149,7 +1148,7 @@ async function handleApi(req, res, pathname) {
   }
 
   if (req.method === "DELETE" && matchTenant) {
-    const user = await requireRole(res, req, ["admin", "landlord"]);
+    const user = await requireRole(res, req, ["manager", "landlord"]);
     if (!user) return;
     const ok = await deleteTenant(matchTenant[1]);
     if (!ok) {
@@ -1161,7 +1160,7 @@ async function handleApi(req, res, pathname) {
   }
 
   if (req.method === "GET" && pathname === "/api/applications") {
-    const user = await requireRole(res, req, ["admin", "landlord"]);
+    const user = await requireRole(res, req, ["manager", "landlord"]);
     if (!user) return;
     sendJson(res, 200, { applications: await getApplications(user) }, req);
     return;
@@ -1203,7 +1202,7 @@ async function handleApi(req, res, pathname) {
   }
 
   if (req.method === "POST" && matchApprove) {
-    const user = await requireRole(res, req, ["admin", "landlord"]);
+    const user = await requireRole(res, req, ["manager", "landlord"]);
     if (!user) return;
     const tenant = await approveApplication(matchApprove[1]);
     if (!tenant) {
@@ -1215,7 +1214,7 @@ async function handleApi(req, res, pathname) {
   }
 
   if (req.method === "POST" && matchReject) {
-    const user = await requireRole(res, req, ["admin", "landlord"]);
+    const user = await requireRole(res, req, ["manager", "landlord"]);
     if (!user) return;
     const ok = await rejectApplication(matchReject[1]);
     if (!ok) {
@@ -1227,14 +1226,14 @@ async function handleApi(req, res, pathname) {
   }
 
   if (req.method === "GET" && pathname === "/api/payments") {
-    const user = await requireRole(res, req, ["admin", "landlord"]);
+    const user = await requireRole(res, req, ["manager", "landlord"]);
     if (!user) return;
     sendJson(res, 200, { payments: await getPayments(user) }, req);
     return;
   }
 
   if (req.method === "POST" && pathname === "/api/payments") {
-    const user = await requireRole(res, req, ["admin", "landlord"]);
+    const user = await requireRole(res, req, ["manager", "landlord"]);
     if (!user) return;
     const body = await readRequestBody(req);
     if (!body.tenantId || !body.amount || !body.paymentDate) {
@@ -1253,14 +1252,14 @@ async function handleApi(req, res, pathname) {
   }
 
   if (req.method === "GET" && pathname === "/api/water-bills") {
-    const user = await requireRole(res, req, ["admin", "landlord"]);
+    const user = await requireRole(res, req, ["manager", "landlord"]);
     if (!user) return;
     sendJson(res, 200, { waterBills: await getWaterBills(user) }, req);
     return;
   }
 
   if (req.method === "POST" && pathname === "/api/water-bills") {
-    const user = await requireRole(res, req, ["admin", "landlord"]);
+    const user = await requireRole(res, req, ["manager", "landlord"]);
     if (!user) return;
     const body = await readRequestBody(req);
     if (!body.houseId || !body.billMonth || !body.billYear || !body.readingDate || body.previousReading === undefined || body.currentReading === undefined) {
@@ -1282,7 +1281,7 @@ async function handleApi(req, res, pathname) {
   }
 
   if (req.method === "GET" && pathname === "/api/reports") {
-    const user = await requireRole(res, req, ["admin", "landlord"]);
+    const user = await requireRole(res, req, ["manager", "landlord"]);
     if (!user) return;
 
     const url = new URL(req.url, `http://${req.headers.host}`);

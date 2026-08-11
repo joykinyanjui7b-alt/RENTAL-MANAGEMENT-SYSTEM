@@ -231,7 +231,7 @@ async function loadUser() {
 }
 
 function applyRoleUI(role) {
-  const labels = { admin: "Admin workspace", landlord: "Landlord workspace", manager: "Manager workspace", tenant: "Tenant workspace" };
+  const labels = { manager: "Manager workspace", landlord: "Landlord workspace", caretaker: "Caretaker workspace", tenant: "Tenant workspace" };
   els.workspaceLabel.textContent = labels[role] || "Rental workspace";
   els.navLinks.forEach((link) => {
     const roles = (link.dataset.roles || "").split(",");
@@ -275,7 +275,7 @@ async function loadUsers() {
     <tr>
       <td>${escapeHtml(user.fullName)}</td>
       <td>${escapeHtml(user.email)}</td>
-      <td><span class="pill ${user.role === "admin" ? "approved" : "in-review"}">${escapeHtml(user.role)}</span></td>
+      <td><span class="pill ${["manager","landlord","caretaker"].includes(user.role) ? "approved" : "in-review"}">${escapeHtml(user.role)}</span></td>
       <td>${formatDate(String(user.createdAt).slice(0, 10))}</td>
     </tr>
   `).join("");
