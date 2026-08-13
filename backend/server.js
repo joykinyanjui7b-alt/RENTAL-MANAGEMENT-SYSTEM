@@ -304,35 +304,50 @@ async function ensureSeedUsers() {
 
   for (const [email, fullName, role] of presentationUsers) {
     const password = passwordMap[email] || "RmsDemo2026!";
-    const existing = await getUserByEmail(email);
-    if (!existing) {
-      await createUser(email, fullName, role, password);
-      console.log(`Seed user created: ${email} (${role})`);
-      continue;
-    }
+    try {
+      if (usePostgres) {
+        // Use UPSERT so deployed Postgres will always end up with the
+        // presentation user and password without requiring manual SQL.
+        const updatedHash = hashPassword(password);
+        const id = crypto.randomUUID();
+        await pool.query(
+          `INSERT INTO users (id, email, full_name, role, password_hash, created_at)
+           VALUES ($1,$2,$3,$4,$5,now())
+           ON CONFLICT (email) DO UPDATE
+           SET full_name = EXCLUDED.full_name,
+               role = EXCLUDED.role,
+               password_hash = EXCLUDED.password_hash`,
+          [id, email, fullName, role, updatedHash]
+        );
+        console.log(`Seed user ensured: ${email} (${role})`);
+      } else {
+        const existing = await getUserByEmail(email);
+        if (!existing) {
+          await createUser(email, fullName, role, password);
+          console.log(`Seed user created: ${email} (${role})`);
+          continue;
+        }
 
-    const needsRoleUpdate = existing.role !== role;
-    const needsPasswordUpdate = !verifyPassword(password, existing.password_hash);
-    if (!needsRoleUpdate && !needsPasswordUpdate) {
-      continue;
-    }
+        const needsRoleUpdate = existing.role !== role;
+        const needsPasswordUpdate = !verifyPassword(password, existing.password_hash);
+        if (!needsRoleUpdate && !needsPasswordUpdate) {
+          continue;
+        }
 
-    const updatedHash = hashPassword(password);
-    if (usePostgres) {
-      await pool.query(
-        "UPDATE users SET role = $1, password_hash = $2 WHERE email = $3",
-        [role, updatedHash, email]
-      );
-    } else {
-      const db = loadLocalDb();
-      const user = db.users.find((u) => u.email === email);
-      if (user) {
-        user.role = role;
-        user.password_hash = updatedHash;
-        saveLocalDb();
+        const updatedHash = hashPassword(password);
+        const db = loadLocalDb();
+        const user = db.users.find((u) => u.email === email);
+        if (user) {
+          user.role = role;
+          user.password_hash = updatedHash;
+          saveLocalDb();
+          console.log(`Seed user updated: ${email} (${role})`);
+        }
       }
+    } catch (err) {
+      console.error(`Failed to seed user ${email}:`, err && err.message ? err.message : err);
+      // continue with next user even if one fails
     }
-    console.log(`Seed user updated: ${email} (${role})`);
   }
 }
 
