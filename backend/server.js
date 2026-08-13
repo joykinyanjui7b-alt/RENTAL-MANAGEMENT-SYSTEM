@@ -303,12 +303,36 @@ async function ensureSeedUsers() {
   ];
 
   for (const [email, fullName, role] of presentationUsers) {
+    const password = passwordMap[email] || "RmsDemo2026!";
     const existing = await getUserByEmail(email);
-    if (existing) {
+    if (!existing) {
+      await createUser(email, fullName, role, password);
+      console.log(`Seed user created: ${email} (${role})`);
       continue;
     }
-    const password = passwordMap[email] || "RmsDemo2026!";
-    await createUser(email, fullName, role, password);
+
+    const needsRoleUpdate = existing.role !== role;
+    const needsPasswordUpdate = !verifyPassword(password, existing.password_hash);
+    if (!needsRoleUpdate && !needsPasswordUpdate) {
+      continue;
+    }
+
+    const updatedHash = hashPassword(password);
+    if (usePostgres) {
+      await pool.query(
+        "UPDATE users SET role = $1, password_hash = $2 WHERE email = $3",
+        [role, updatedHash, email]
+      );
+    } else {
+      const db = loadLocalDb();
+      const user = db.users.find((u) => u.email === email);
+      if (user) {
+        user.role = role;
+        user.password_hash = updatedHash;
+        saveLocalDb();
+      }
+    }
+    console.log(`Seed user updated: ${email} (${role})`);
   }
 }
 
@@ -408,7 +432,10 @@ async function getHouses(user = null) {
       status: h.status,
       ownerId: h.owner_id || null
     }));
-    if (user && (user.role === "landlord" || user.role === "manager")) {
+    if (user && user.role === "manager") {
+      return houses;
+    }
+    if (user && user.role === "landlord") {
       return houses.filter((house) => house.ownerId === user.id);
     }
     return houses;
@@ -428,7 +455,10 @@ async function getHouses(user = null) {
     status: h.status,
     ownerId: h.ownerId || h.owner_id || null
   }));
-  if (user && (user.role === "landlord" || user.role === "manager")) {
+  if (user && user.role === "manager") {
+    return houses;
+  }
+  if (user && user.role === "landlord") {
     return houses.filter((house) => house.ownerId === user.id);
   }
   return houses;
