@@ -496,12 +496,13 @@ async function createHouse({ houseNumber, houseName, rentAmount, roomType, locat
   const id = crypto.randomUUID();
   const numericPrice = Number(price ?? rentAmount);
   const numericRent = Number(rentAmount ?? numericPrice);
-  const roomTitle = String(roomType || houseNumber || houseName || "").trim();
+  const number = String(houseNumber || "").trim();
+  const roomTitle = String(roomType || "").trim();
   const house = {
     id,
-    houseNumber: roomTitle || String(houseNumber).trim(),
-    houseName: String(houseName || roomTitle || houseNumber || "").trim(),
-    roomType: roomTitle || String(houseNumber).trim(),
+    houseNumber: number,
+    houseName: String(houseName || number).trim(),
+    roomType: roomTitle,
     location: String(location || "").trim(),
     description: String(description || "").trim(),
     rentAmount: numericRent,
@@ -547,6 +548,7 @@ function mapTenant(t, houseMap) {
     email: t.email || "",
     houseId: t.house_id || t.houseId,
     houseNumber: house.houseNumber || "Unassigned",
+    houseType: house.roomType || null,
     rentStatus: t.rent_status || t.rentStatus || "unpaid",
     moveInDate: t.move_in_date || t.moveInDate || null,
     moveOutDate: t.move_out_date || t.moveOutDate || null,
@@ -554,15 +556,16 @@ function mapTenant(t, houseMap) {
   };
 }
 
-async function createTenant({ name, phone, email, houseId }) {
+async function createTenant({ name, phone, email, houseId, moveInDate, moveOutDate }) {
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
-  const tenant = { id, name, phone, email, house_id: houseId, houseId, move_in_date: now.slice(0, 10), moveInDate: now.slice(0, 10), move_out_date: null, moveOutDate: null, status: "active", rent_status: "unpaid", rentStatus: "unpaid", created_at: now, createdAt: now };
+  const moveIn = moveInDate || now.slice(0, 10);
+  const tenant = { id, name, phone, email: email || "", house_id: houseId, houseId, move_in_date: moveIn, moveInDate: moveIn, move_out_date: moveOutDate || null, moveOutDate: moveOutDate || null, status: moveOutDate ? "former" : "active", rent_status: "unpaid", rentStatus: "unpaid", created_at: now, createdAt: now };
 
   if (usePostgres) {
     await pool.query(
-      "INSERT INTO tenants (id, name, phone, email, house_id, move_in_date, status, created_at) VALUES ($1,$2,$3,$4,$5,$6,'active',now())",
-      [id, name, phone, email, houseId, now.slice(0, 10)]
+      "INSERT INTO tenants (id, name, phone, email, house_id, move_in_date, move_out_date, status, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,now())",
+      [id, name, phone, email || null, houseId, moveIn, moveOutDate || null, moveOutDate ? "former" : "active"]
     );
   } else {
     const db = loadLocalDb();
@@ -574,13 +577,13 @@ async function createTenant({ name, phone, email, houseId }) {
   return tenant;
 }
 
-async function updateTenant(id, { name, phone, email, houseId }) {
+async function updateTenant(id, { name, phone, email, houseId, moveInDate, moveOutDate }) {
   if (usePostgres) {
     const existing = await pool.query("SELECT house_id FROM tenants WHERE id=$1", [id]);
     if (existing.rowCount === 0) return null;
     const result = await pool.query(
-      "UPDATE tenants SET name=$1, phone=$2, email=$3, house_id=$4, status='active', move_out_date=NULL WHERE id=$5 RETURNING *",
-      [name, phone, email, houseId, id]
+      "UPDATE tenants SET name=$1, phone=$2, email=$3, house_id=$4, move_in_date=$5, move_out_date=$6, status=$7 WHERE id=$8 RETURNING *",
+      [name, phone, email || null, houseId, moveInDate || new Date().toISOString().slice(0, 10), moveOutDate || null, moveOutDate ? "former" : "active", id]
     );
     if (existing.rows[0].house_id && existing.rows[0].house_id !== houseId) {
       await setHouseStatus(existing.rows[0].house_id, "vacant");
@@ -590,9 +593,12 @@ async function updateTenant(id, { name, phone, email, houseId }) {
     const tenant = db.tenants.find((t) => t.id === id);
     if (!tenant) return null;
     const previousHouseId = tenant.house_id;
-    Object.assign(tenant, { name, phone, email, house_id: houseId, houseId });
-    tenant.status = "active";
-    tenant.move_out_date = null;
+    Object.assign(tenant, { name, phone, email: email || "", house_id: houseId, houseId });
+    tenant.move_in_date = moveInDate || tenant.move_in_date || new Date().toISOString().slice(0, 10);
+    tenant.moveInDate = tenant.move_in_date;
+    tenant.move_out_date = moveOutDate || null;
+    tenant.moveOutDate = tenant.move_out_date;
+    tenant.status = moveOutDate ? "former" : "active";
     saveLocalDb();
     if (previousHouseId && previousHouseId !== houseId) {
       await setHouseStatus(previousHouseId, "vacant");
@@ -1065,24 +1071,25 @@ async function handleApi(req, res, pathname) {
     const user = await requireRole(res, req, ["manager", "landlord"]);
     if (!user) return;
     const body = await readRequestBody(req);
-    const roomType = String(body.roomType || body.houseNumber || body.room_type || "").trim();
+    const houseNumber = String(body.houseNumber || body.house_number || "").trim();
+    const roomType = String(body.roomType || body.room_type || "").trim();
     const location = String(body.location || "").trim();
     const description = String(body.description || "").trim();
     const price = Number(body.price ?? body.rentAmount ?? body.rent_amount);
 
-    if (!roomType || Number.isNaN(price) || price <= 0) {
-      sendError(res, 400, "Room type and price are required", req);
+    if (!houseNumber || !roomType || Number.isNaN(price) || price <= 0) {
+      sendError(res, 400, "House number, house type, and price are required", req);
       return;
     }
 
-    const existing = (await getHouses()).find((house) => (house.roomType || house.houseNumber).toLowerCase() === roomType.toLowerCase() && (house.location || "").toLowerCase() === location.toLowerCase());
+    const existing = (await getHouses()).find((house) => house.houseNumber.toLowerCase() === houseNumber.toLowerCase());
     if (existing) {
       sendError(res, 409, "A house with this number already exists", req);
       return;
     }
 
     const house = await createHouse({
-      houseNumber: roomType,
+      houseNumber,
       houseName: body.houseName,
       rentAmount: price,
       roomType,
@@ -1160,8 +1167,8 @@ async function handleApi(req, res, pathname) {
     const user = await requireRole(res, req, ["manager", "landlord"]);
     if (!user) return;
     const body = await readRequestBody(req);
-    if (!body.name || !body.phone || !body.houseId) {
-      sendError(res, 400, "Name, phone, and house are required", req);
+    if (!body.name || !body.phone || !body.houseId || !body.moveInDate) {
+      sendError(res, 400, "Name, phone, house, and move-in date are required", req);
       return;
     }
     const assignedTenant = (await getTenants()).find((tenant) => tenant.houseId === body.houseId && tenant.status === "active");

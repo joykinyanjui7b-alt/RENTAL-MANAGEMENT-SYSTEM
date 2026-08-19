@@ -54,6 +54,7 @@ const els = {
   landlordHouseTable: document.querySelector("#landlordHouseTable"),
   houseDialog: document.querySelector("#houseDialog"),
   houseForm: document.querySelector("#houseForm"),
+  houseNumberInput: document.querySelector("#houseNumberInput"),
   houseRoomTypeInput: document.querySelector("#houseRoomTypeInput"),
   houseLocationInput: document.querySelector("#houseLocationInput"),
   housePriceInput: document.querySelector("#housePriceInput"),
@@ -69,7 +70,8 @@ const els = {
   tenantId: document.querySelector("#tenantId"),
   tenantNameInput: document.querySelector("#tenantNameInput"),
   tenantPhoneInput: document.querySelector("#tenantPhoneInput"),
-  tenantEmailInput: document.querySelector("#tenantEmailInput"),
+  tenantMoveInDateInput: document.querySelector("#tenantMoveInDateInput"),
+  tenantMoveOutDateInput: document.querySelector("#tenantMoveOutDateInput"),
   tenantHouseInput: document.querySelector("#tenantHouseInput"),
   deleteTenantButton: document.querySelector("#deleteTenantButton"),
   closeTenantDialogButton: document.querySelector("#closeTenantDialogButton"),
@@ -296,6 +298,7 @@ els.closeHouseDialogButton?.addEventListener("click", () => els.houseDialog.clos
 els.houseForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const payload = {
+    houseNumber: els.houseNumberInput.value.trim(),
     roomType: els.houseRoomTypeInput.value.trim(),
     houseName: els.houseNameInput.value.trim(),
     location: els.houseLocationInput.value.trim(),
@@ -315,12 +318,12 @@ async function loadHouses() {
   const data = await api("/api/houses");
   state.houses = data.houses || [];
   const options = state.houses
-    .map((h) => `<option value="${h.id}">${escapeHtml(h.houseName || h.houseNumber)}</option>`)
+    .map((h) => `<option value="${h.id}">${escapeHtml(h.houseNumber)} • ${escapeHtml(h.roomType || "House type not set")}</option>`)
     .join("");
   els.tenantHouseInput.innerHTML = options;
   els.tenantApplicationHouseInput.innerHTML = state.houses
     .filter((house) => house.status === "vacant")
-    .map((house) => `<option value="${house.id}">${escapeHtml(house.houseName || house.roomType || house.houseNumber)} • ${escapeHtml(house.location || "Location not set")} • ${formatMoney(house.rentAmount || house.price || 0)}</option>`)
+    .map((house) => `<option value="${house.id}">${escapeHtml(house.houseNumber)} • ${escapeHtml(house.roomType || "House type not set")} • ${escapeHtml(house.location || "Location not set")} • ${formatMoney(house.rentAmount || house.price || 0)}</option>`)
     .join("");
   els.waterBillHouseInput.innerHTML = options;
   renderLandlordHouses();
@@ -457,17 +460,19 @@ function renderTenants() {
   );
 
   if (rows.length === 0) {
-    els.tenantTable.innerHTML = `<tr><td colspan="6"><div class="empty-state">No tenants match.</div></td></tr>`;
+    els.tenantTable.innerHTML = `<tr><td colspan="8"><div class="empty-state">No tenants match.</div></td></tr>`;
     return;
   }
 
   els.tenantTable.innerHTML = rows
     .map((t) => `
       <tr>
-        <td><strong>${escapeHtml(t.name)}</strong><p>${escapeHtml(t.email || "")}</p></td>
+        <td><strong>${escapeHtml(t.name)}</strong></td>
         <td>${escapeHtml(t.phone)}</td>
-        <td>${escapeHtml(t.houseNumber)}</td>
-        <td><span class="pill ${t.status === "active" ? "approved" : "blocked"}">${escapeHtml(t.status || "active")}</span>${t.moveOutDate ? `<p>Left ${escapeHtml(formatDate(t.moveOutDate))}</p>` : ""}</td>
+        <td>${escapeHtml(t.houseNumber)}${t.houseType ? `<p>${escapeHtml(t.houseType)}</p>` : ""}</td>
+        <td>${t.moveInDate ? escapeHtml(formatDate(t.moveInDate)) : "Not set"}</td>
+        <td>${t.moveOutDate ? escapeHtml(formatDate(t.moveOutDate)) : "Not set"}</td>
+        <td><span class="pill ${t.status === "active" ? "approved" : "blocked"}">${escapeHtml(t.status || "active")}</span></td>
         <td><span class="pill ${t.rentStatus === "paid" ? "approved" : "blocked"}">${escapeHtml(t.rentStatus || "unknown")}</span></td>
         <td><button class="action-button" data-edit-tenant="${t.id}" type="button">Edit</button></td>
       </tr>
@@ -483,6 +488,7 @@ els.tenantSearchInput.addEventListener("input", (e) => {
 function resetTenantForm() {
   els.tenantForm.reset();
   els.tenantId.value = "";
+  els.tenantMoveInDateInput.value = new Date().toISOString().slice(0, 10);
   els.deleteTenantButton.hidden = true;
   els.tenantDialogTitle.textContent = "Add tenant";
 }
@@ -502,7 +508,8 @@ els.tenantTable.addEventListener("click", (event) => {
   els.tenantId.value = tenant.id;
   els.tenantNameInput.value = tenant.name;
   els.tenantPhoneInput.value = tenant.phone;
-  els.tenantEmailInput.value = tenant.email || "";
+  els.tenantMoveInDateInput.value = tenant.moveInDate || "";
+  els.tenantMoveOutDateInput.value = tenant.moveOutDate || "";
   els.tenantHouseInput.value = tenant.houseId;
   els.deleteTenantButton.hidden = false;
   els.tenantDialogTitle.textContent = "Edit tenant";
@@ -515,8 +522,9 @@ els.tenantForm.addEventListener("submit", async (event) => {
   const payload = {
     name: els.tenantNameInput.value,
     phone: els.tenantPhoneInput.value,
-    email: els.tenantEmailInput.value,
-    houseId: els.tenantHouseInput.value
+    houseId: els.tenantHouseInput.value,
+    moveInDate: els.tenantMoveInDateInput.value,
+    moveOutDate: els.tenantMoveOutDateInput.value || null
   };
 
   if (id) {

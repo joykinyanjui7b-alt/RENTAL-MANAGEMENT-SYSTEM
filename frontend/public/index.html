@@ -17,15 +17,15 @@
           </div>
         </div>
         <nav class="nav-list" aria-label="Main navigation">
-          <a class="active" href="#dashboard" data-panel="dashboard" data-roles="admin,landlord,manager,tenant">Dashboard</a>
+          <a class="active" href="#dashboard" data-panel="dashboard" data-roles="manager,landlord,caretaker,tenant">Dashboard</a>
           <a href="#houses" data-panel="houses" data-roles="tenant">Available Houses</a>
           <a href="#my-applications" data-panel="my-applications" data-roles="tenant">My Applications</a>
-          <a href="#tenants" data-panel="tenants" data-roles="admin,landlord,manager">Tenant Records</a>
-          <a href="#applications" data-panel="applications" data-roles="admin,landlord,manager">Applications</a>
-          <a href="#payments" data-panel="payments" data-roles="admin,landlord,manager">Payments</a>
-          <a href="#water-bills" data-panel="water-bills" data-roles="admin,landlord,manager">Water bills</a>
-          <a href="#reports" data-panel="reports" data-roles="admin,landlord,manager">Reports</a>
-          <a href="#users" data-panel="users" data-roles="admin">User Access</a>
+          <a href="#tenants" data-panel="tenants" data-roles="landlord,manager">Tenant Records</a>
+          <a href="#applications" data-panel="applications" data-roles="landlord,manager">Applications</a>
+          <a href="#payments" data-panel="payments" data-roles="landlord,manager">Payments</a>
+          <a href="#water-bills" data-panel="water-bills" data-roles="landlord,manager">Water bills</a>
+          <a href="#reports" data-panel="reports" data-roles="landlord,manager">Reports</a>
+          <a href="#users" data-panel="users" data-roles="manager">User Access</a>
         </nav>
       </aside>
 
@@ -112,6 +112,8 @@
                     <th>Tenant</th>
                     <th>Phone</th>
                     <th>House No.</th>
+                    <th>Move-in</th>
+                    <th>Move-out</th>
                     <th>Status</th>
                     <th>Rent status</th>
                     <th></th>
@@ -261,7 +263,7 @@
           <div class="panel document-panel">
             <div class="panel-header">
               <div>
-                <p class="eyebrow">Administration</p>
+                <p class="eyebrow">Management</p>
                 <h2>User Access</h2>
               </div>
             </div>
@@ -348,7 +350,11 @@
           <button class="ghost-button icon-button" id="closeHouseDialogButton" type="button" aria-label="Close">x</button>
         </div>
         <label>
-          <span>Room type</span>
+          <span>House number</span>
+          <input id="houseNumberInput" placeholder="e.g. A2" required>
+        </label>
+        <label>
+          <span>House type</span>
           <input id="houseRoomTypeInput" placeholder="e.g. One bedroom, Bedsitter, Single room" required>
         </label>
         <label>
@@ -405,12 +411,16 @@
             <input id="tenantPhoneInput" required>
           </label>
           <label>
-            <span>Email</span>
-            <input id="tenantEmailInput" type="email">
+            <span>Move-in date</span>
+            <input id="tenantMoveInDateInput" type="date" required>
           </label>
         </div>
         <label>
-          <span>House</span>
+          <span>Move-out date</span>
+          <input id="tenantMoveOutDateInput" type="date">
+        </label>
+        <label>
+          <span>House number and type</span>
           <select id="tenantHouseInput" required></select>
         </label>
         <div class="modal-actions">
