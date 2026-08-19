@@ -72,7 +72,8 @@ const els = {
   tenantPhoneInput: document.querySelector("#tenantPhoneInput"),
   tenantMoveInDateInput: document.querySelector("#tenantMoveInDateInput"),
   tenantMoveOutDateInput: document.querySelector("#tenantMoveOutDateInput"),
-  tenantHouseInput: document.querySelector("#tenantHouseInput"),
+  tenantHouseNumberInput: document.querySelector("#tenantHouseNumberInput"),
+  tenantHouseTypeInput: document.querySelector("#tenantHouseTypeInput"),
   deleteTenantButton: document.querySelector("#deleteTenantButton"),
   closeTenantDialogButton: document.querySelector("#closeTenantDialogButton"),
 
@@ -314,10 +315,18 @@ els.houseForm?.addEventListener("submit", async (event) => {
 async function loadHouses() {
   const data = await api("/api/houses");
   state.houses = data.houses || [];
+  const houseNumberOptions = state.houses
+    .map((h) => `<option value="${h.id}">${escapeHtml(h.houseNumber)}</option>`)
+    .join("");
+  const houseTypes = [...new Set(state.houses.map((h) => h.roomType).filter(Boolean))];
+  const houseTypeOptions = houseTypes
+    .map((type) => `<option value="${escapeHtml(type)}">${escapeHtml(type)}</option>`)
+    .join("");
+  els.tenantHouseNumberInput.innerHTML = houseNumberOptions;
+  els.tenantHouseTypeInput.innerHTML = houseTypeOptions;
   const options = state.houses
     .map((h) => `<option value="${h.id}">${escapeHtml(h.houseNumber)} • ${escapeHtml(h.roomType || "House type not set")}</option>`)
     .join("");
-  els.tenantHouseInput.innerHTML = options;
   els.tenantApplicationHouseInput.innerHTML = state.houses
     .filter((house) => house.status === "vacant")
     .map((house) => `<option value="${house.id}">${escapeHtml(house.houseNumber)} • ${escapeHtml(house.roomType || "House type not set")} • ${escapeHtml(house.location || "Location not set")} • ${formatMoney(house.rentAmount || house.price || 0)}</option>`)
@@ -507,7 +516,9 @@ els.tenantTable.addEventListener("click", (event) => {
   els.tenantPhoneInput.value = tenant.phone;
   els.tenantMoveInDateInput.value = tenant.moveInDate || "";
   els.tenantMoveOutDateInput.value = tenant.moveOutDate || "";
-  els.tenantHouseInput.value = tenant.houseId;
+  const tenantHouse = state.houses.find((house) => house.id === tenant.houseId);
+  els.tenantHouseNumberInput.value = tenantHouse?.id || "";
+  els.tenantHouseTypeInput.value = tenantHouse?.roomType || "";
   els.deleteTenantButton.hidden = false;
   els.tenantDialogTitle.textContent = "Edit tenant";
   els.tenantDialog.showModal();
@@ -516,10 +527,17 @@ els.tenantTable.addEventListener("click", (event) => {
 els.tenantForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const id = els.tenantId.value;
+  const selectedHouse = state.houses.find((house) =>
+    house.id === els.tenantHouseNumberInput.value && house.roomType === els.tenantHouseTypeInput.value
+  );
+  if (!selectedHouse) {
+    showToast("Choose a matching house number and house type.");
+    return;
+  }
   const payload = {
     name: els.tenantNameInput.value,
     phone: els.tenantPhoneInput.value,
-    houseId: els.tenantHouseInput.value,
+    houseId: selectedHouse.id,
     moveInDate: els.tenantMoveInDateInput.value,
     moveOutDate: els.tenantMoveOutDateInput.value || null
   };

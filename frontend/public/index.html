@@ -416,10 +416,16 @@
           <span>Move-out date</span>
           <input id="tenantMoveOutDateInput" type="date">
         </label>
-        <label>
-          <span>House number and type</span>
-          <select id="tenantHouseInput" required></select>
-        </label>
+        <div class="form-row">
+          <label>
+            <span>House number</span>
+            <select id="tenantHouseNumberInput" required></select>
+          </label>
+          <label>
+            <span>House type</span>
+            <select id="tenantHouseTypeInput" required></select>
+          </label>
+        </div>
         <div class="modal-actions">
           <button class="secondary-button" id="deleteTenantButton" type="button" hidden>Delete</button>
           <button class="primary-button" type="submit">Save tenant</button>
