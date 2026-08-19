@@ -466,7 +466,7 @@ function renderTenants() {
   );
 
   if (rows.length === 0) {
-    els.tenantTable.innerHTML = `<tr><td colspan="8"><div class="empty-state">No tenants match.</div></td></tr>`;
+    els.tenantTable.innerHTML = `<tr><td colspan="9"><div class="empty-state">No tenants match.</div></td></tr>`;
     return;
   }
 
@@ -475,7 +475,8 @@ function renderTenants() {
       <tr>
         <td><strong>${escapeHtml(t.name)}</strong></td>
         <td>${escapeHtml(t.phone)}</td>
-        <td>${escapeHtml(t.houseNumber)}${t.houseType ? `<p>${escapeHtml(t.houseType)}</p>` : ""}</td>
+        <td>${escapeHtml(t.houseNumber)}</td>
+        <td>${escapeHtml(t.houseType || "House type not set")}</td>
         <td>${t.moveInDate ? escapeHtml(formatDate(t.moveInDate)) : "Not set"}</td>
         <td>${t.moveOutDate ? escapeHtml(formatDate(t.moveOutDate)) : "Not set"}</td>
         <td><span class="pill ${t.status === "active" ? "approved" : "blocked"}">${escapeHtml(t.status || "active")}</span></td>
