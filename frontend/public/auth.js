@@ -1,4 +1,4 @@
-const FALLBACK_API_BASE_URL = "https://rms-zffu.onrender.com";
+const FALLBACK_API_BASE_URL = "https://rental-management-system-vnn1.onrender.com";
 const API_BASE_URL = (() => {
   const configured = window.APP_CONFIG && window.APP_CONFIG.apiBaseUrl !== undefined ? window.APP_CONFIG.apiBaseUrl : "";
   const base = String(configured || FALLBACK_API_BASE_URL || "").replace(/\/$/, "");

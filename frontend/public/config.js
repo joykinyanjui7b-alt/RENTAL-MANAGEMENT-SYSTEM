@@ -1,3 +1,3 @@
 window.APP_CONFIG = {
-  apiBaseUrl: "https://rms-zffu.onrender.com"
+  apiBaseUrl: "https://rental-management-system-vnn1.onrender.com"
 };

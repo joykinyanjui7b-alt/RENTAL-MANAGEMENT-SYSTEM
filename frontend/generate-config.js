@@ -16,8 +16,8 @@ if (!isProductionBuild && fs.existsSync(envPath)) {
 }
 
 const rawApiBaseUrl = process.env.API_BASE_URL?.trim() || "";
-const fallbackApiBaseUrl = "https://rms-zffu.onrender.com";
-const brokenBackendHostnames = ["system-documentation-backend.onrender.com", "rental-management-system-vnn1.onrender.com"];
+const fallbackApiBaseUrl = "https://rental-management-system-vnn1.onrender.com";
+const brokenBackendHostnames = ["rms-zffu.onrender.com", "system-documentation-backend.onrender.com"];
 const configuredApiBaseUrl = rawApiBaseUrl && !brokenBackendHostnames.some((host) => rawApiBaseUrl.includes(host)) ? rawApiBaseUrl : "";
 const defaultApiBaseUrl = isProductionBuild
   ? fallbackApiBaseUrl
