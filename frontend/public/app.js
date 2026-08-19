@@ -252,17 +252,15 @@ function applyRoleUI(role) {
 function renderLandlordHouses() {
   if (!els.landlordHouseTable) return;
   if (!state.houses.length) {
-    els.landlordHouseTable.innerHTML = `<tr><td colspan="4"><div class="empty-state">No houses added yet.</div></td></tr>`;
+    els.landlordHouseTable.innerHTML = `<tr><td colspan="5"><div class="empty-state">No houses added yet.</div></td></tr>`;
     return;
   }
 
   els.landlordHouseTable.innerHTML = state.houses
     .map((house) => `
       <tr>
-        <td>
-          <strong>${escapeHtml(house.houseName || house.roomType || house.houseNumber)}</strong>
-          <p>${escapeHtml(house.location || "Location not set")}</p>
-        </td>
+        <td><strong>${escapeHtml(house.houseNumber)}</strong><p>${escapeHtml(house.location || "Location not set")}</p></td>
+        <td>${escapeHtml(house.roomType || "House type not set")}</td>
         <td>${formatMoney(house.rentAmount || house.price || 0)}</td>
         <td>${escapeHtml(house.caretakerName ? `${house.caretakerName}${house.caretakerPhone ? ` • ${house.caretakerPhone}` : ""}` : "No caretaker assigned")}</td>
         <td><span class="pill ${house.status === "vacant" ? "approved" : "blocked"}">${escapeHtml(house.status || "vacant")}</span></td>
@@ -300,7 +298,6 @@ els.houseForm?.addEventListener("submit", async (event) => {
   const payload = {
     houseNumber: els.houseNumberInput.value.trim(),
     roomType: els.houseRoomTypeInput.value.trim(),
-    houseName: els.houseNameInput.value.trim(),
     location: els.houseLocationInput.value.trim(),
     price: Number(els.housePriceInput.value),
     description: els.houseDescriptionInput.value.trim(),
