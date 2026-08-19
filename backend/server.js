@@ -292,8 +292,8 @@ async function ensureSeedUsers() {
   };
 
   const presentationUsers = [
-    ["manager@rms.com", "RMS Manager", "manager"],
-    ["landlord@rms.com", "RMS Landlord", "landlord"],
+    ["manager@rms.com", "Manager Joy", "manager"],
+    ["landlord@rms.com", "Mr Raphael Kinyanjui", "landlord"],
     ["landlord2@rms.com", "Second RMS Landlord", "landlord"],
     ["tenant1@rms.com", "Tenant One", "tenant"],
     ["tenant2@rms.com", "Tenant Two", "tenant"],
