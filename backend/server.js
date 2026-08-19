@@ -230,8 +230,8 @@ async function initDb() {
 
   if (houseCount === 0) {
     const seedHouses = [
-      { id: crypto.randomUUID(), houseNumber: "One bedroom", rentAmount: 12000, roomType: "One bedroom", location: "Along Thika Road", description: "Bright one-bedroom unit with a private bathroom and cooking area." },
-      { id: crypto.randomUUID(), houseNumber: "Bedsitter", rentAmount: 10000, roomType: "Bedsitter", location: "Westlands", description: "Comfortable bedsitter with fitted kitchen and Wi-Fi ready." }
+      { id: crypto.randomUUID(), houseNumber: "A1", rentAmount: 12000, roomType: "One bedroom", location: "Along Thika Road", description: "Bright one-bedroom unit with a private bathroom and cooking area." },
+      { id: crypto.randomUUID(), houseNumber: "A2", rentAmount: 10000, roomType: "Bedsitter", location: "Westlands", description: "Comfortable bedsitter with fitted kitchen and Wi-Fi ready." }
     ];
 
     if (usePostgres) {
