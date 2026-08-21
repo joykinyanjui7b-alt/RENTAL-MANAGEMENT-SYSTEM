@@ -72,6 +72,7 @@ const els = {
   tenantPhoneInput: document.querySelector("#tenantPhoneInput"),
   tenantMoveInDateInput: document.querySelector("#tenantMoveInDateInput"),
   tenantMoveOutDateInput: document.querySelector("#tenantMoveOutDateInput"),
+  tenantDepositInput: document.querySelector("#tenantDepositInput"),
   tenantHouseNumberInput: document.querySelector("#tenantHouseNumberInput"),
   tenantHouseTypeInput: document.querySelector("#tenantHouseTypeInput"),
   deleteTenantButton: document.querySelector("#deleteTenantButton"),
@@ -466,7 +467,7 @@ function renderTenants() {
   );
 
   if (rows.length === 0) {
-    els.tenantTable.innerHTML = `<tr><td colspan="9"><div class="empty-state">No tenants match.</div></td></tr>`;
+    els.tenantTable.innerHTML = `<tr><td colspan="10"><div class="empty-state">No tenants match.</div></td></tr>`;
     return;
   }
 
@@ -479,6 +480,7 @@ function renderTenants() {
         <td>${escapeHtml(t.houseType || "House type not set")}</td>
         <td>${t.moveInDate ? escapeHtml(formatDate(t.moveInDate)) : "Not set"}</td>
         <td>${t.moveOutDate ? escapeHtml(formatDate(t.moveOutDate)) : "Not set"}</td>
+        <td>${formatMoney(t.depositAmount)}</td>
         <td><span class="pill ${t.status === "active" ? "approved" : "blocked"}">${escapeHtml(t.status || "active")}</span></td>
         <td><span class="pill ${t.rentStatus === "paid" ? "approved" : "blocked"}">${escapeHtml(t.rentStatus || "unknown")}</span></td>
         <td><button class="action-button" data-edit-tenant="${t.id}" type="button">Edit</button></td>
@@ -517,6 +519,7 @@ els.tenantTable.addEventListener("click", (event) => {
   els.tenantPhoneInput.value = tenant.phone;
   els.tenantMoveInDateInput.value = tenant.moveInDate || "";
   els.tenantMoveOutDateInput.value = tenant.moveOutDate || "";
+  els.tenantDepositInput.value = tenant.depositAmount || 0;
   const tenantHouse = state.houses.find((house) => house.id === tenant.houseId);
   els.tenantHouseNumberInput.value = tenantHouse?.id || "";
   els.tenantHouseTypeInput.value = tenantHouse?.roomType || "";
@@ -540,7 +543,8 @@ els.tenantForm.addEventListener("submit", async (event) => {
     phone: els.tenantPhoneInput.value,
     houseId: selectedHouse.id,
     moveInDate: els.tenantMoveInDateInput.value,
-    moveOutDate: els.tenantMoveOutDateInput.value || null
+    moveOutDate: els.tenantMoveOutDateInput.value || null,
+    depositAmount: Number(els.tenantDepositInput.value || 0)
   };
 
   if (id) {
