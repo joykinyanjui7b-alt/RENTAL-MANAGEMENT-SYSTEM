@@ -80,7 +80,8 @@
                 <thead>
                   <tr>
                     <th>Applicant</th>
-                    <th>House</th>
+                    <th>House number</th>
+                    <th>House type</th>
                     <th>Date applied</th>
                     <th>Status</th>
                   </tr>
@@ -179,7 +180,8 @@
                 <thead>
                   <tr>
                     <th>Tenant</th>
-                    <th>House</th>
+                    <th>House number</th>
+                    <th>House type</th>
                     <th>Paid</th>
                     <th>Rent</th>
                     <th>Water</th>
@@ -460,10 +462,16 @@
           </div>
           <button class="ghost-button icon-button" id="closePaymentDialogButton" type="button" aria-label="Close">x</button>
         </div>
-        <label>
-          <span>Tenant</span>
-          <select id="paymentTenantInput" required></select>
-        </label>
+        <div class="form-row">
+          <label>
+            <span>Tenant name</span>
+            <select id="paymentTenantInput" required></select>
+          </label>
+          <label>
+            <span>House number</span>
+            <select id="paymentHouseInput" required></select>
+          </label>
+        </div>
         <div class="form-row">
           <label>
             <span>Amount paid</span>
@@ -499,10 +507,16 @@
           </div>
           <button class="ghost-button icon-button" id="closeWaterBillDialogButton" type="button" aria-label="Close">x</button>
         </div>
-        <label>
-          <span>House</span>
-          <select id="waterBillHouseInput" required></select>
-        </label>
+        <div class="form-row">
+          <label>
+            <span>House number</span>
+            <select id="waterBillHouseNumberInput" required></select>
+          </label>
+          <label>
+            <span>House type</span>
+            <select id="waterBillHouseTypeInput" required></select>
+          </label>
+        </div>
         <div class="form-row">
           <label>
             <span>Bill month</span>

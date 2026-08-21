@@ -37,7 +37,8 @@ const els = {
   waterBillTable: document.querySelector("#waterBillTable"),
   waterBillDialog: document.querySelector("#waterBillDialog"),
   waterBillForm: document.querySelector("#waterBillForm"),
-  waterBillHouseInput: document.querySelector("#waterBillHouseInput"),
+  waterBillHouseNumberInput: document.querySelector("#waterBillHouseNumberInput"),
+  waterBillHouseTypeInput: document.querySelector("#waterBillHouseTypeInput"),
   waterBillMonthInput: document.querySelector("#waterBillMonthInput"),
   waterBillYearInput: document.querySelector("#waterBillYearInput"),
   waterBillReadingDateInput: document.querySelector("#waterBillReadingDateInput"),
@@ -88,6 +89,7 @@ const els = {
   paymentDialog: document.querySelector("#paymentDialog"),
   paymentForm: document.querySelector("#paymentForm"),
   paymentTenantInput: document.querySelector("#paymentTenantInput"),
+  paymentHouseInput: document.querySelector("#paymentHouseInput"),
   paymentAmountInput: document.querySelector("#paymentAmountInput"),
   paymentDateInput: document.querySelector("#paymentDateInput"),
   closePaymentDialogButton: document.querySelector("#closePaymentDialogButton"),
@@ -334,7 +336,12 @@ async function loadHouses() {
     .filter((house) => house.status === "vacant")
     .map((house) => `<option value="${house.id}">${escapeHtml(house.houseNumber)} • ${escapeHtml(house.roomType || "House type not set")} • ${escapeHtml(house.location || "Location not set")} • ${formatMoney(house.rentAmount || house.price || 0)}</option>`)
     .join("");
-  els.waterBillHouseInput.innerHTML = options;
+  els.waterBillHouseNumberInput.innerHTML = state.houses
+    .map((house) => `<option value="${house.id}">${escapeHtml(house.houseNumber)}</option>`)
+    .join("");
+  els.waterBillHouseTypeInput.innerHTML = [...new Set(state.houses.map((house) => house.roomType).filter(Boolean))]
+    .map((type) => `<option value="${escapeHtml(type)}">${escapeHtml(type)}</option>`)
+    .join("");
   renderLandlordHouses();
   renderTenantHouses();
   renderWaterBills();
@@ -653,18 +660,26 @@ async function loadPayments() {
   renderPayments();
 
   const options = state.tenants.length
-    ? state.tenants.map((t) => `<option value="${t.id}">${escapeHtml(t.name)} • ${escapeHtml(t.houseNumber)}</option>`).join("")
+    ? state.tenants.map((t) => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join("")
     : (await (async () => {
         const tData = await api("/api/tenants");
         state.tenants = tData.tenants || [];
-        return state.tenants.map((t) => `<option value="${t.id}">${escapeHtml(t.name)} • ${escapeHtml(t.houseNumber)}</option>`).join("");
+        return state.tenants.map((t) => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join("");
       })());
   els.paymentTenantInput.innerHTML = options;
+  updatePaymentHouse();
+}
+
+function updatePaymentHouse() {
+  const tenant = state.tenants.find((item) => item.id === els.paymentTenantInput.value);
+  els.paymentHouseInput.innerHTML = tenant
+    ? `<option value="${tenant.houseId}">${escapeHtml(tenant.houseNumber)}</option>`
+    : "";
 }
 
 function renderPayments() {
   if (state.payments.length === 0) {
-    els.paymentTable.innerHTML = `<tr><td colspan="8"><div class="empty-state">No payments recorded yet.</div></td></tr>`;
+    els.paymentTable.innerHTML = `<tr><td colspan="9"><div class="empty-state">No payments recorded yet.</div></td></tr>`;
     return;
   }
 
@@ -673,6 +688,7 @@ function renderPayments() {
       <tr>
         <td>${escapeHtml(p.tenantName)}</td>
         <td>${escapeHtml(p.houseNumber)}</td>
+        <td>${escapeHtml(p.houseType || "House type not set")}</td>
         <td>${formatMoney(p.amount)}</td>
         <td>${formatMoney(p.rentAmount)}</td>
         <td>${formatMoney(p.waterAmount)}</td>
@@ -693,14 +709,15 @@ async function loadWaterBills() {
 function renderWaterBills() {
   if (!els.waterBillTable) return;
   if (!state.waterBills.length) {
-    els.waterBillTable.innerHTML = `<tr><td colspan="6"><div class="empty-state">No water bills logged yet.</div></td></tr>`;
+    els.waterBillTable.innerHTML = `<tr><td colspan="7"><div class="empty-state">No water bills logged yet.</div></td></tr>`;
     return;
   }
 
   els.waterBillTable.innerHTML = state.waterBills
     .map((bill) => `
       <tr>
-        <td>${escapeHtml(bill.houseName || bill.houseNumber)}</td>
+        <td>${escapeHtml(bill.houseNumber)}</td>
+        <td>${escapeHtml(bill.houseType || "House type not set")}</td>
         <td>${escapeHtml(`${bill.billMonth || ""} ${bill.billYear || ""}`)}</td>
         <td>${formatDate(bill.readingDate)}</td>
         <td>${escapeHtml(bill.unitsUsed.toString())}</td>
@@ -724,6 +741,7 @@ els.newWaterBillButton?.addEventListener("click", () => {
 els.closeWaterBillDialogButton?.addEventListener("click", () => els.waterBillDialog.close());
 
 els.closePaymentDialogButton.addEventListener("click", () => els.paymentDialog.close());
+els.paymentTenantInput.addEventListener("change", updatePaymentHouse);
 
 els.paymentForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -743,7 +761,7 @@ els.paymentForm.addEventListener("submit", async (event) => {
 els.waterBillForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const payload = {
-    houseId: els.waterBillHouseInput.value,
+    houseId: state.houses.find((house) => house.id === els.waterBillHouseNumberInput.value && house.roomType === els.waterBillHouseTypeInput.value)?.id,
     billMonth: els.waterBillMonthInput.value.trim(),
     billYear: Number(els.waterBillYearInput.value),
     readingDate: els.waterBillReadingDateInput.value,
@@ -752,6 +770,10 @@ els.waterBillForm?.addEventListener("submit", async (event) => {
     waterAmount: Number(els.waterBillAmountInput.value || 0),
     notes: els.waterBillNotesInput.value.trim()
   };
+  if (!payload.houseId) {
+    showToast("Choose a matching house number and house type.");
+    return;
+  }
   await api("/api/water-bills", { method: "POST", body: JSON.stringify(payload) });
   els.waterBillDialog.close();
   showToast("Water bill logged");

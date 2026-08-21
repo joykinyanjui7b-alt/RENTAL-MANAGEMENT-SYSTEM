@@ -760,6 +760,17 @@ async function getPayments(user = null) {
     .map((p) => mapPayment(p, tenantMap));
 }
 
+function mapPayment(p, tenantMap) {
+  const tenant = tenantMap[p.tenant_id || p.tenantId] || {};
+  return {
+    ...p,
+    tenantId: p.tenant_id || p.tenantId,
+    tenantName: tenant.name || "Unknown tenant",
+    houseNumber: tenant.houseNumber || "Unknown",
+    houseType: tenant.houseType || "Unknown"
+  };
+}
+
 async function createPayment({ tenantId, amount, paymentDate, rentAmount = 0, waterAmount = 0, garbageAmount = 0 }) {
   const tenants = await getTenants();
   const tenant = tenants.find((t) => t.id === tenantId);
@@ -841,6 +852,7 @@ function mapWaterBill(bill, houseMap) {
     houseId: bill.house_id || bill.houseId,
     houseNumber: house.houseNumber || "Unknown",
     houseName: house.houseName || house.houseNumber || "",
+    houseType: house.roomType || "Unknown",
     billMonth: bill.bill_month || bill.billMonth,
     billYear: bill.bill_year || bill.billYear,
     readingDate: bill.reading_date || bill.readingDate,
