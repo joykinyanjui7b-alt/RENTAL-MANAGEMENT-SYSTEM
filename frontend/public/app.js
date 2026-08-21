@@ -87,6 +87,7 @@ const els = {
   applicationTable: document.querySelector("#applicationTable"),
 
   paymentTable: document.querySelector("#paymentTable"),
+  paymentSummary: document.querySelector("#paymentSummary"),
   newPaymentButton: document.querySelector("#newPaymentButton"),
   paymentDialog: document.querySelector("#paymentDialog"),
   paymentForm: document.querySelector("#paymentForm"),
@@ -516,7 +517,7 @@ function renderTenants() {
   );
 
   if (rows.length === 0) {
-    els.tenantTable.innerHTML = `<tr><td colspan="12"><div class="empty-state">No tenants match.</div></td></tr>`;
+    els.tenantTable.innerHTML = `<tr><td colspan="14"><div class="empty-state">No tenants match.</div></td></tr>`;
     return;
   }
 
@@ -532,6 +533,8 @@ function renderTenants() {
         <td>${formatMoney(t.rentPaid)}</td>
         <td>${formatMoney(t.depositAmount)}</td>
         <td>${formatMoney(t.waterDeposit)}</td>
+        <td>${formatMoney(Number(t.rentPaid || 0) + Number(t.depositAmount || 0) + Number(t.waterDeposit || 0))}</td>
+        <td>${formatMoney(state.payments.filter((payment) => payment.tenantId === t.id).reduce((sum, payment) => sum + Number(payment.balance || 0), 0))}</td>
         <td><span class="pill ${t.status === "active" ? "approved" : "blocked"}">${escapeHtml(t.status || "active")}</span></td>
         <td><span class="pill ${t.rentStatus === "paid" ? "approved" : "blocked"}">${escapeHtml(t.rentStatus || "unknown")}</span></td>
         <td><button class="action-button" data-edit-tenant="${t.id}" type="button">Edit</button></td>
@@ -718,6 +721,18 @@ function updatePaymentHouse() {
 }
 
 function renderPayments() {
+  const totals = state.payments.reduce((summary, payment) => ({
+    paid: summary.paid + Number(payment.amount || 0),
+    water: summary.water + Number(payment.waterAmount || 0),
+    garbage: summary.garbage + Number(payment.garbageAmount || 0),
+    balance: summary.balance + Number(payment.balance || 0)
+  }), { paid: 0, water: 0, garbage: 0, balance: 0 });
+  els.paymentSummary.innerHTML = `
+    <span>Total paid: <strong>${formatMoney(totals.paid)}</strong></span>
+    <span>Water: <strong>${formatMoney(totals.water)}</strong></span>
+    <span>Garbage: <strong>${formatMoney(totals.garbage)}</strong></span>
+    <span>Balance: <strong>${formatMoney(totals.balance)}</strong></span>
+  `;
   if (state.payments.length === 0) {
     els.paymentTable.innerHTML = `<tr><td colspan="9"><div class="empty-state">No payments recorded yet.</div></td></tr>`;
     return;
@@ -735,6 +750,7 @@ function renderPayments() {
         <td>${formatMoney(p.garbageAmount)}</td>
         <td>${formatMoney(p.totalDue)}</td>
         <td>${formatMoney(p.balance)}</td>
+        <td><span class="pill ${Number(p.balance || 0) === 0 ? "approved" : "blocked"}">${Number(p.balance || 0) === 0 ? "Paid" : "Not paid"}</span></td>
       </tr>
     `)
     .join("");
