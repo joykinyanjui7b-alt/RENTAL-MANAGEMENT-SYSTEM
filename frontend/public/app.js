@@ -299,12 +299,12 @@ els.logoutButton.addEventListener("click", async () => {
 
 function nextHouseNumber() {
   const numbered = state.houses
-    .map((house) => String(house.houseNumber || "").match(/^(.*?)(\d+)$/))
+    .map((house) => String(house.houseNumber || "").trim().match(/^([A-Za-z]+)(\d+)$/))
     .filter(Boolean)
-    .map((match) => ({ prefix: match[1], number: Number(match[2]) }));
+    .map((match) => ({ prefix: match[1].toUpperCase(), number: Number(match[2]) }));
   if (!numbered.length) return "A1";
   const latest = numbered.sort((a, b) => b.number - a.number)[0];
-  return `${latest.prefix}${latest.number + 1}`;
+  return `A${latest.number + 1}`;
 }
 
 function openNewHouseDialog() {
@@ -363,7 +363,14 @@ els.houseForm?.addEventListener("submit", async (event) => {
 
 async function loadHouses() {
   const data = await api("/api/houses");
-  state.houses = data.houses || [];
+  state.houses = (data.houses || []).sort((left, right) => {
+    const leftMatch = String(left.houseNumber || "").match(/^([A-Za-z]+)(\d+)$/);
+    const rightMatch = String(right.houseNumber || "").match(/^([A-Za-z]+)(\d+)$/);
+    if (leftMatch && rightMatch && leftMatch[1].toUpperCase() === rightMatch[1].toUpperCase()) {
+      return Number(leftMatch[2]) - Number(rightMatch[2]);
+    }
+    return String(left.houseNumber || "").localeCompare(String(right.houseNumber || ""));
+  });
   const houseNumberOptions = state.houses
     .map((h) => `<option value="${h.id}">${escapeHtml(h.houseNumber)}</option>`)
     .join("");
