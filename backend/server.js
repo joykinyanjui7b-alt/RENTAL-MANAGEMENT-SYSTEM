@@ -530,21 +530,21 @@ async function createHouse({ houseNumber, houseName, rentAmount, roomType, locat
   return house;
 }
 
-async function updateHouse(id, { houseNumber, roomType, location, description, price, caretakerName, caretakerPhone }) {
+async function updateHouse(id, { houseNumber, houseName, roomType, location, description, price, caretakerName, caretakerPhone }) {
   const number = String(houseNumber || "").trim();
   const type = String(roomType || "").trim();
   const numericPrice = Number(price);
   if (usePostgres) {
     const result = await pool.query(
-      "UPDATE houses SET house_number=$1, house_name=$1, room_type=$2, location=$3, description=$4, price=$5, rent_amount=$5, caretaker_name=$6, caretaker_phone=$7 WHERE id=$8 RETURNING *",
-      [number, type, location || "", description || "", numericPrice, caretakerName || "", caretakerPhone || "", id]
+      "UPDATE houses SET house_number=$1, house_name=$2, room_type=$3, location=$4, description=$5, price=$6, rent_amount=$6, caretaker_name=$7, caretaker_phone=$8 WHERE id=$9 RETURNING *",
+      [number, String(houseName || number).trim(), type, location || "", description || "", numericPrice, caretakerName || "", caretakerPhone || "", id]
     );
     return result.rowCount > 0;
   }
   const db = loadLocalDb();
   const house = db.houses.find((item) => item.id === id);
   if (!house) return false;
-  Object.assign(house, { houseNumber: number, houseName: number, roomType: type, location: location || "", description: description || "", price: numericPrice, rentAmount: numericPrice, caretakerName: caretakerName || "", caretakerPhone: caretakerPhone || "" });
+  Object.assign(house, { houseNumber: number, houseName: String(houseName || number).trim(), roomType: type, location: location || "", description: description || "", price: numericPrice, rentAmount: numericPrice, caretakerName: caretakerName || "", caretakerPhone: caretakerPhone || "" });
   saveLocalDb();
   return true;
 }

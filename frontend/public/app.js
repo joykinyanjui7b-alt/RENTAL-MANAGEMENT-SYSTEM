@@ -261,7 +261,7 @@ function applyRoleUI(role) {
 function renderLandlordHouses() {
   if (!els.landlordHouseTable) return;
   if (!state.houses.length) {
-    els.landlordHouseTable.innerHTML = `<tr><td colspan="6"><div class="empty-state">No houses added yet.</div></td></tr>`;
+    els.landlordHouseTable.innerHTML = `<tr><td colspan="7"><div class="empty-state">No houses added yet.</div></td></tr>`;
     return;
   }
 
@@ -269,6 +269,7 @@ function renderLandlordHouses() {
     .map((house) => `
       <tr>
         <td><strong>${escapeHtml(house.houseNumber)}</strong><p>${escapeHtml(house.location || "Location not set")}</p></td>
+        <td>${escapeHtml(house.houseName || house.houseNumber)}</td>
         <td>${escapeHtml(house.roomType || "House type not set")}</td>
         <td>${formatMoney(house.rentAmount || house.price || 0)}</td>
         <td>${escapeHtml(house.caretakerName ? `${house.caretakerName}${house.caretakerPhone ? ` • ${house.caretakerPhone}` : ""}` : "No caretaker assigned")}</td>
@@ -327,6 +328,7 @@ els.landlordHouseTable?.addEventListener("click", (event) => {
   els.houseForm.dataset.editId = house.id;
   els.houseDialogTitle.textContent = "Edit house";
   els.houseNumberInput.value = house.houseNumber || "";
+  els.houseNameInput.value = house.houseName || house.houseNumber || "";
   els.houseRoomTypeInput.value = house.roomType || "";
   els.houseLocationInput.value = house.location || "";
   els.housePriceInput.value = house.price || house.rentAmount || "";
@@ -340,6 +342,7 @@ els.houseForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const payload = {
     houseNumber: els.houseNumberInput.value.trim(),
+    houseName: els.houseNameInput.value.trim(),
     roomType: els.houseRoomTypeInput.value.trim(),
     location: els.houseLocationInput.value.trim(),
     price: Number(els.housePriceInput.value),
