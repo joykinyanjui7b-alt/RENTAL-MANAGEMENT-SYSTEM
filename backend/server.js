@@ -435,7 +435,7 @@ async function requireRole(res, req, roles) {
 
 async function getHouses(user = null) {
   if (usePostgres) {
-    const result = await pool.query("SELECT * FROM houses ORDER BY house_number");
+    const result = await pool.query("SELECT * FROM houses ORDER BY regexp_replace(house_number, '[0-9]+$', ''), NULLIF(regexp_replace(house_number, '^[^0-9]+', ''), '')::integer, house_number");
     const houses = result.rows.map((h) => ({
       id: h.id,
       houseNumber: h.house_number,
