@@ -178,6 +178,8 @@ async function initDb() {
       ALTER TABLE tenants ADD COLUMN IF NOT EXISTS move_out_date date;
       ALTER TABLE tenants ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active';
       ALTER TABLE tenants ADD COLUMN IF NOT EXISTS deposit_amount numeric NOT NULL DEFAULT 0;
+      ALTER TABLE tenants ADD COLUMN IF NOT EXISTS rent_paid numeric NOT NULL DEFAULT 0;
+      ALTER TABLE tenants ADD COLUMN IF NOT EXISTS water_deposit numeric NOT NULL DEFAULT 0;
       ALTER TABLE applications ADD COLUMN IF NOT EXISTS message text;
       ALTER TABLE houses ADD COLUMN IF NOT EXISTS room_type text;
       ALTER TABLE houses ADD COLUMN IF NOT EXISTS house_name text;
@@ -554,21 +556,25 @@ function mapTenant(t, houseMap) {
     moveInDate: t.move_in_date || t.moveInDate || null,
     moveOutDate: t.move_out_date || t.moveOutDate || null,
     depositAmount: Number(t.deposit_amount ?? t.depositAmount ?? 0),
+    rentPaid: Number(t.rent_paid ?? t.rentPaid ?? 0),
+    waterDeposit: Number(t.water_deposit ?? t.waterDeposit ?? 0),
     status: t.status || "active"
   };
 }
 
-async function createTenant({ name, phone, email, houseId, moveInDate, moveOutDate, depositAmount }) {
+async function createTenant({ name, phone, email, houseId, moveInDate, moveOutDate, depositAmount, rentPaid, waterDeposit }) {
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   const moveIn = moveInDate || now.slice(0, 10);
   const deposit = Number(depositAmount || 0);
-  const tenant = { id, name, phone, email: email || "", house_id: houseId, houseId, move_in_date: moveIn, moveInDate: moveIn, move_out_date: moveOutDate || null, moveOutDate: moveOutDate || null, deposit_amount: deposit, depositAmount: deposit, status: moveOutDate ? "former" : "active", rent_status: "unpaid", rentStatus: "unpaid", created_at: now, createdAt: now };
+  const rent = Number(rentPaid || 0);
+  const water = Number(waterDeposit || 0);
+  const tenant = { id, name, phone, email: email || "", house_id: houseId, houseId, move_in_date: moveIn, moveInDate: moveIn, move_out_date: moveOutDate || null, moveOutDate: moveOutDate || null, deposit_amount: deposit, depositAmount: deposit, rent_paid: rent, rentPaid: rent, water_deposit: water, waterDeposit: water, status: moveOutDate ? "former" : "active", rent_status: "unpaid", rentStatus: "unpaid", created_at: now, createdAt: now };
 
   if (usePostgres) {
     await pool.query(
-      "INSERT INTO tenants (id, name, phone, email, house_id, move_in_date, move_out_date, deposit_amount, status, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,now())",
-      [id, name, phone, email || null, houseId, moveIn, moveOutDate || null, deposit, moveOutDate ? "former" : "active"]
+      "INSERT INTO tenants (id, name, phone, email, house_id, move_in_date, move_out_date, deposit_amount, rent_paid, water_deposit, status, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,now())",
+      [id, name, phone, email || null, houseId, moveIn, moveOutDate || null, deposit, rent, water, moveOutDate ? "former" : "active"]
     );
   } else {
     const db = loadLocalDb();
@@ -580,13 +586,13 @@ async function createTenant({ name, phone, email, houseId, moveInDate, moveOutDa
   return tenant;
 }
 
-async function updateTenant(id, { name, phone, email, houseId, moveInDate, moveOutDate, depositAmount }) {
+async function updateTenant(id, { name, phone, email, houseId, moveInDate, moveOutDate, depositAmount, rentPaid, waterDeposit }) {
   if (usePostgres) {
     const existing = await pool.query("SELECT house_id FROM tenants WHERE id=$1", [id]);
     if (existing.rowCount === 0) return null;
     const result = await pool.query(
-      "UPDATE tenants SET name=$1, phone=$2, email=$3, house_id=$4, move_in_date=$5, move_out_date=$6, deposit_amount=$7, status=$8 WHERE id=$9 RETURNING *",
-      [name, phone, email || null, houseId, moveInDate || new Date().toISOString().slice(0, 10), moveOutDate || null, Number(depositAmount || 0), moveOutDate ? "former" : "active", id]
+      "UPDATE tenants SET name=$1, phone=$2, email=$3, house_id=$4, move_in_date=$5, move_out_date=$6, deposit_amount=$7, rent_paid=$8, water_deposit=$9, status=$10 WHERE id=$11 RETURNING *",
+      [name, phone, email || null, houseId, moveInDate || new Date().toISOString().slice(0, 10), moveOutDate || null, Number(depositAmount || 0), Number(rentPaid || 0), Number(waterDeposit || 0), moveOutDate ? "former" : "active", id]
     );
     if (existing.rows[0].house_id && existing.rows[0].house_id !== houseId) {
       await setHouseStatus(existing.rows[0].house_id, "vacant");
@@ -603,6 +609,10 @@ async function updateTenant(id, { name, phone, email, houseId, moveInDate, moveO
     tenant.moveOutDate = tenant.move_out_date;
     tenant.deposit_amount = Number(depositAmount || 0);
     tenant.depositAmount = tenant.deposit_amount;
+    tenant.rent_paid = Number(rentPaid || 0);
+    tenant.rentPaid = tenant.rent_paid;
+    tenant.water_deposit = Number(waterDeposit || 0);
+    tenant.waterDeposit = tenant.water_deposit;
     tenant.status = moveOutDate ? "former" : "active";
     saveLocalDb();
     if (previousHouseId && previousHouseId !== houseId) {
