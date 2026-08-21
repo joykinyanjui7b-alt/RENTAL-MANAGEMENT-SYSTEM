@@ -55,12 +55,14 @@ const els = {
   landlordHouseTable: document.querySelector("#landlordHouseTable"),
   houseDialog: document.querySelector("#houseDialog"),
   houseForm: document.querySelector("#houseForm"),
+  houseDialogTitle: document.querySelector("#houseDialogTitle"),
   houseNumberInput: document.querySelector("#houseNumberInput"),
   houseRoomTypeInput: document.querySelector("#houseRoomTypeInput"),
   houseLocationInput: document.querySelector("#houseLocationInput"),
   housePriceInput: document.querySelector("#housePriceInput"),
   houseDescriptionInput: document.querySelector("#houseDescriptionInput"),
   closeHouseDialogButton: document.querySelector("#closeHouseDialogButton"),
+  closeHouseDialogButton2: document.querySelector("#closeHouseDialogButton2"),
 
   tenantSearchInput: document.querySelector("#tenantSearchInput"),
   tenantTable: document.querySelector("#tenantTable"),
@@ -258,7 +260,7 @@ function applyRoleUI(role) {
 function renderLandlordHouses() {
   if (!els.landlordHouseTable) return;
   if (!state.houses.length) {
-    els.landlordHouseTable.innerHTML = `<tr><td colspan="5"><div class="empty-state">No houses added yet.</div></td></tr>`;
+    els.landlordHouseTable.innerHTML = `<tr><td colspan="6"><div class="empty-state">No houses added yet.</div></td></tr>`;
     return;
   }
 
@@ -270,6 +272,7 @@ function renderLandlordHouses() {
         <td>${formatMoney(house.rentAmount || house.price || 0)}</td>
         <td>${escapeHtml(house.caretakerName ? `${house.caretakerName}${house.caretakerPhone ? ` • ${house.caretakerPhone}` : ""}` : "No caretaker assigned")}</td>
         <td><span class="pill ${house.status === "vacant" ? "approved" : "blocked"}">${escapeHtml(house.status || "vacant")}</span></td>
+        <td><button class="action-button" data-edit-house="${house.id}" type="button">Edit</button></td>
       </tr>
     `)
     .join("");
@@ -292,12 +295,45 @@ els.logoutButton.addEventListener("click", async () => {
   window.location.href = "login.html";
 });
 
-els.newHouseButton?.addEventListener("click", () => {
+function nextHouseNumber() {
+  const numbered = state.houses
+    .map((house) => String(house.houseNumber || "").match(/^(.*?)(\d+)$/))
+    .filter(Boolean)
+    .map((match) => ({ prefix: match[1], number: Number(match[2]) }));
+  if (!numbered.length) return "A1";
+  const latest = numbered.sort((a, b) => b.number - a.number)[0];
+  return `${latest.prefix}${latest.number + 1}`;
+}
+
+function openNewHouseDialog() {
   els.houseForm.reset();
+  els.houseDialogTitle.textContent = "Add house";
+  els.houseNumberInput.value = nextHouseNumber();
+  els.houseForm.dataset.editId = "";
   els.houseDialog.showModal();
-});
+}
+
+els.newHouseButton?.addEventListener("click", openNewHouseDialog);
 
 els.closeHouseDialogButton?.addEventListener("click", () => els.houseDialog.close());
+els.closeHouseDialogButton2?.addEventListener("click", () => els.houseDialog.close());
+
+els.landlordHouseTable?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-edit-house]");
+  if (!button) return;
+  const house = state.houses.find((item) => item.id === button.dataset.editHouse);
+  if (!house) return;
+  els.houseForm.dataset.editId = house.id;
+  els.houseDialogTitle.textContent = "Edit house";
+  els.houseNumberInput.value = house.houseNumber || "";
+  els.houseRoomTypeInput.value = house.roomType || "";
+  els.houseLocationInput.value = house.location || "";
+  els.housePriceInput.value = house.price || house.rentAmount || "";
+  els.houseDescriptionInput.value = house.description || "";
+  els.houseCaretakerNameInput.value = house.caretakerName || "";
+  els.houseCaretakerPhoneInput.value = house.caretakerPhone || "";
+  els.houseDialog.showModal();
+});
 
 els.houseForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -310,9 +346,13 @@ els.houseForm?.addEventListener("submit", async (event) => {
     caretakerName: els.houseCaretakerNameInput.value.trim(),
     caretakerPhone: els.houseCaretakerPhoneInput.value.trim()
   };
-  await api("/api/houses", { method: "POST", body: JSON.stringify(payload) });
+  const editId = els.houseForm.dataset.editId;
+  await api(editId ? `/api/houses/${editId}` : "/api/houses", {
+    method: editId ? "PUT" : "POST",
+    body: JSON.stringify(payload)
+  });
   els.houseDialog.close();
-  showToast("House added");
+  showToast(editId ? "House updated" : "House added");
   await loadHouses();
   await loadDashboard();
 });

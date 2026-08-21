@@ -530,6 +530,25 @@ async function createHouse({ houseNumber, houseName, rentAmount, roomType, locat
   return house;
 }
 
+async function updateHouse(id, { houseNumber, roomType, location, description, price, caretakerName, caretakerPhone }) {
+  const number = String(houseNumber || "").trim();
+  const type = String(roomType || "").trim();
+  const numericPrice = Number(price);
+  if (usePostgres) {
+    const result = await pool.query(
+      "UPDATE houses SET house_number=$1, house_name=$1, room_type=$2, location=$3, description=$4, price=$5, rent_amount=$5, caretaker_name=$6, caretaker_phone=$7 WHERE id=$8 RETURNING *",
+      [number, type, location || "", description || "", numericPrice, caretakerName || "", caretakerPhone || "", id]
+    );
+    return result.rowCount > 0;
+  }
+  const db = loadLocalDb();
+  const house = db.houses.find((item) => item.id === id);
+  if (!house) return false;
+  Object.assign(house, { houseNumber: number, houseName: number, roomType: type, location: location || "", description: description || "", price: numericPrice, rentAmount: numericPrice, caretakerName: caretakerName || "", caretakerPhone: caretakerPhone || "" });
+  saveLocalDb();
+  return true;
+}
+
 async function getTenants(user = null) {
   const houses = await getHouses(user);
   const houseMap = Object.fromEntries(houses.map((h) => [h.id, h]));
@@ -1128,6 +1147,29 @@ async function handleApi(req, res, pathname) {
       ownerId: user.id
     });
     sendJson(res, 201, { house }, req);
+    return;
+  }
+
+  const houseMatch = pathname.match(/^\/api\/houses\/([^/]+)$/);
+  if (req.method === "PUT" && houseMatch) {
+    const user = await requireRole(res, req, ["manager", "landlord"]);
+    if (!user) return;
+    const body = await readRequestBody(req);
+    if (!body.houseNumber || !body.roomType || Number.isNaN(Number(body.price)) || Number(body.price) <= 0) {
+      sendError(res, 400, "House number, house type, and price are required", req);
+      return;
+    }
+    const duplicate = (await getHouses()).find((house) => house.houseNumber.toLowerCase() === String(body.houseNumber).trim().toLowerCase() && house.id !== houseMatch[1]);
+    if (duplicate) {
+      sendError(res, 409, "A house with this number already exists", req);
+      return;
+    }
+    const updated = await updateHouse(houseMatch[1], body);
+    if (!updated) {
+      sendError(res, 404, "House not found", req);
+      return;
+    }
+    sendJson(res, 200, { ok: true }, req);
     return;
   }
 
