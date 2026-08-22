@@ -308,10 +308,27 @@ function nextHouseNumber() {
   return `A${latest.number + 1}`;
 }
 
+function latestHouse() {
+  return [...state.houses].sort((left, right) => {
+    const leftNumber = Number(String(left.houseNumber || "").match(/\d+$/)?.[0] || 0);
+    const rightNumber = Number(String(right.houseNumber || "").match(/\d+$/)?.[0] || 0);
+    return rightNumber - leftNumber;
+  })[0] || null;
+}
+
 function openNewHouseDialog() {
   els.houseForm.reset();
   els.houseDialogTitle.textContent = "Add house";
-  els.houseNumberInput.value = nextHouseNumber();
+  const nextNumber = nextHouseNumber();
+  const previousHouse = latestHouse();
+  els.houseNumberInput.value = nextNumber;
+  els.houseNameInput.value = nextNumber;
+  els.houseRoomTypeInput.value = previousHouse?.roomType || "";
+  els.houseLocationInput.value = previousHouse?.location || "";
+  els.housePriceInput.value = previousHouse?.price || previousHouse?.rentAmount || "";
+  els.houseDescriptionInput.value = previousHouse?.description || "";
+  els.houseCaretakerNameInput.value = previousHouse?.caretakerName || "";
+  els.houseCaretakerPhoneInput.value = previousHouse?.caretakerPhone || "";
   els.houseForm.dataset.editId = "";
   els.houseDialog.showModal();
 }
