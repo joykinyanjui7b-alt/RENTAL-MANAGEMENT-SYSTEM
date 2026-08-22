@@ -154,9 +154,10 @@ function escapeHtml(value) {
 
 function formatDate(value) {
   if (!value) return "No date";
-  return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" }).format(
-    new Date(`${value}T00:00:00`)
-  );
+  const dateValue = String(value);
+  const date = dateValue.includes("T") ? new Date(dateValue) : new Date(`${dateValue}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return "Invalid date";
+  return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" }).format(date);
 }
 
 function formatMoney(value) {
