@@ -299,13 +299,18 @@ els.logoutButton.addEventListener("click", async () => {
 });
 
 function nextHouseNumber() {
+  const remembered = localStorage.getItem("rms_last_house_sequence");
+  const rememberedMatch = remembered && remembered.match(/^([A-Za-z]+)(\d+)$/);
+  if (rememberedMatch) {
+    return `${rememberedMatch[1].toUpperCase()}${Number(rememberedMatch[2]) + 1}`;
+  }
   const numbered = state.houses
     .map((house) => String(house.houseNumber || "").trim().match(/^([A-Za-z]+)(\d+)$/))
     .filter(Boolean)
     .map((match) => ({ prefix: match[1].toUpperCase(), number: Number(match[2]) }));
   if (!numbered.length) return "A1";
   const latest = numbered.sort((a, b) => b.number - a.number)[0];
-  return `A${latest.number + 1}`;
+  return `${latest.prefix}${latest.number + 1}`;
 }
 
 function latestHouse() {
@@ -373,6 +378,9 @@ els.houseForm?.addEventListener("submit", async (event) => {
     method: editId ? "PUT" : "POST",
     body: JSON.stringify(payload)
   });
+  if (!editId) {
+    localStorage.setItem("rms_last_house_sequence", payload.houseNumber);
+  }
   els.houseDialog.close();
   showToast(editId ? "House updated" : "House added");
   await loadHouses();
