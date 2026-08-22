@@ -516,7 +516,14 @@ function renderRecentApplications(applications) {
 
 async function loadTenants() {
   const data = await api("/api/tenants");
-  state.tenants = data.tenants || [];
+  state.tenants = (data.tenants || []).sort((left, right) => {
+    const leftMatch = String(left.houseNumber || "").match(/^([A-Za-z]+)(\d+)$/);
+    const rightMatch = String(right.houseNumber || "").match(/^([A-Za-z]+)(\d+)$/);
+    if (leftMatch && rightMatch && leftMatch[1].toUpperCase() === rightMatch[1].toUpperCase()) {
+      return Number(leftMatch[2]) - Number(rightMatch[2]);
+    }
+    return String(left.houseNumber || "").localeCompare(String(right.houseNumber || ""));
+  });
   renderTenants();
 }
 
