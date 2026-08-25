@@ -454,7 +454,7 @@ async function getHouses(user = null) {
       return houses;
     }
     if (user && user.role === "landlord") {
-      return houses.filter((house) => house.ownerId === user.id);
+      return houses;
     }
     return houses;
   }
@@ -477,7 +477,7 @@ async function getHouses(user = null) {
     return houses;
   }
   if (user && user.role === "landlord") {
-    return houses.filter((house) => house.ownerId === user.id);
+    return houses;
   }
   return houses;
 }
