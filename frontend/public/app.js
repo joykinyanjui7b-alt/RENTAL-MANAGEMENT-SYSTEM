@@ -95,6 +95,8 @@ const els = {
   paymentHouseInput: document.querySelector("#paymentHouseInput"),
   paymentAmountInput: document.querySelector("#paymentAmountInput"),
   paymentDateInput: document.querySelector("#paymentDateInput"),
+  paymentWaterInput: document.querySelector("#paymentWaterInput"),
+  paymentGarbageInput: document.querySelector("#paymentGarbageInput"),
   closePaymentDialogButton: document.querySelector("#closePaymentDialogButton"),
 
   reportForm: document.querySelector("#reportForm"),
