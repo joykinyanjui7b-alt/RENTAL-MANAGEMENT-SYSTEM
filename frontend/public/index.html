@@ -177,6 +177,12 @@
                 <p class="eyebrow">Rent collection</p>
                 <h2>Payment Records</h2>
               </div>
+              <label class="search-box">
+                <span>View month</span>
+                <select id="paymentMonthFilter">
+                  <option value="">All months</option>
+                </select>
+              </label>
               <button class="primary-button" id="newPaymentButton" type="button">+ Record payment</button>
             </div>
             <div class="record-summary" id="paymentSummary"></div>
@@ -187,6 +193,8 @@
                     <th>Tenant</th>
                     <th>House number</th>
                     <th>House type</th>
+                    <th>Rent month</th>
+                    <th>Payment date</th>
                     <th>Paid</th>
                     <th>Rent</th>
                     <th>Water</th>
@@ -488,6 +496,12 @@
             <span>Amount paid</span>
             <input id="paymentAmountInput" type="number" min="0" step="1" required>
           </label>
+          <label>
+            <span>Rent month</span>
+            <input id="paymentMonthInput" type="month" required>
+          </label>
+        </div>
+        <div class="form-row">
           <label>
             <span>Payment date</span>
             <input id="paymentDateInput" type="date" required>

@@ -88,12 +88,14 @@ const els = {
 
   paymentTable: document.querySelector("#paymentTable"),
   paymentSummary: document.querySelector("#paymentSummary"),
+  paymentMonthFilter: document.querySelector("#paymentMonthFilter"),
   newPaymentButton: document.querySelector("#newPaymentButton"),
   paymentDialog: document.querySelector("#paymentDialog"),
   paymentForm: document.querySelector("#paymentForm"),
   paymentTenantInput: document.querySelector("#paymentTenantInput"),
   paymentHouseInput: document.querySelector("#paymentHouseInput"),
   paymentAmountInput: document.querySelector("#paymentAmountInput"),
+  paymentMonthInput: document.querySelector("#paymentMonthInput"),
   paymentDateInput: document.querySelector("#paymentDateInput"),
   paymentWaterInput: document.querySelector("#paymentWaterInput"),
   paymentGarbageInput: document.querySelector("#paymentGarbageInput"),
@@ -745,6 +747,10 @@ els.tenantApplicationForm.addEventListener("submit", async (event) => {
 async function loadPayments() {
   const data = await api("/api/payments");
   state.payments = data.payments || [];
+  const currentMonth = state.paymentMonthFilter.value;
+  const months = [...new Set(state.payments.map((payment) => payment.rentMonth).filter(Boolean))].sort().reverse();
+  state.paymentMonthFilter.innerHTML = `<option value="">All months</option>${months.map((month) => `<option value="${escapeHtml(month)}">${escapeHtml(formatPaymentMonth(month))}</option>`).join("")}`;
+  state.paymentMonthFilter.value = months.includes(currentMonth) ? currentMonth : "";
   renderPayments();
 
   const options = state.tenants.length
@@ -758,6 +764,12 @@ async function loadPayments() {
   updatePaymentHouse();
 }
 
+function formatPaymentMonth(value) {
+  if (!value) return "All months";
+  const date = new Date(`${value}-01T00:00:00`);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" }).format(date);
+}
+
 function updatePaymentHouse() {
   const tenant = state.tenants.find((item) => item.id === els.paymentTenantInput.value);
   els.paymentHouseInput.innerHTML = tenant
@@ -766,7 +778,10 @@ function updatePaymentHouse() {
 }
 
 function renderPayments() {
-  const totals = state.payments.reduce((summary, payment) => ({
+  const visiblePayments = state.paymentMonthFilter.value
+    ? state.payments.filter((payment) => payment.rentMonth === state.paymentMonthFilter.value)
+    : state.payments;
+  const totals = visiblePayments.reduce((summary, payment) => ({
     paid: summary.paid + Number(payment.amount || 0),
     water: summary.water + Number(payment.waterAmount || 0),
     garbage: summary.garbage + Number(payment.garbageAmount || 0),
@@ -778,17 +793,19 @@ function renderPayments() {
     <span>Garbage: <strong>${formatMoney(totals.garbage)}</strong></span>
     <span>Balance: <strong>${formatMoney(totals.balance)}</strong></span>
   `;
-  if (state.payments.length === 0) {
-    els.paymentTable.innerHTML = `<tr><td colspan="9"><div class="empty-state">No payments recorded yet.</div></td></tr>`;
+  if (visiblePayments.length === 0) {
+    els.paymentTable.innerHTML = `<tr><td colspan="12"><div class="empty-state">No payments recorded yet.</div></td></tr>`;
     return;
   }
 
-  els.paymentTable.innerHTML = state.payments
+  els.paymentTable.innerHTML = visiblePayments
     .map((p) => `
       <tr>
         <td>${escapeHtml(p.tenantName)}</td>
         <td>${escapeHtml(p.houseNumber)}</td>
         <td>${escapeHtml(p.houseType || "House type not set")}</td>
+        <td>${escapeHtml(p.rentMonth || "Not specified")}</td>
+        <td>${p.paymentDate ? escapeHtml(formatDate(p.paymentDate)) : "Not specified"}</td>
         <td>${formatMoney(p.amount)}</td>
         <td>${formatMoney(p.rentAmount)}</td>
         <td>${formatMoney(p.waterAmount)}</td>
@@ -800,6 +817,8 @@ function renderPayments() {
     `)
     .join("");
 }
+
+els.paymentMonthFilter.addEventListener("change", renderPayments);
 
 async function loadWaterBills() {
   const data = await api("/api/water-bills");
@@ -849,6 +868,7 @@ els.paymentForm.addEventListener("submit", async (event) => {
   const payload = {
     tenantId: els.paymentTenantInput.value,
     amount: els.paymentAmountInput.value,
+    rentMonth: els.paymentMonthInput.value,
     paymentDate: els.paymentDateInput.value,
     waterAmount: Number(els.paymentWaterInput.value || 0),
     garbageAmount: Number(els.paymentGarbageInput.value || 0)
