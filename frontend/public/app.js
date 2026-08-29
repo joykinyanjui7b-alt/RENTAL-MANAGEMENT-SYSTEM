@@ -92,6 +92,7 @@ const els = {
   newPaymentButton: document.querySelector("#newPaymentButton"),
   paymentDialog: document.querySelector("#paymentDialog"),
   paymentForm: document.querySelector("#paymentForm"),
+  paymentDialogTitle: document.querySelector("#paymentDialogTitle"),
   paymentTenantInput: document.querySelector("#paymentTenantInput"),
   paymentHouseInput: document.querySelector("#paymentHouseInput"),
   paymentAmountInput: document.querySelector("#paymentAmountInput"),
@@ -99,6 +100,7 @@ const els = {
   paymentDateInput: document.querySelector("#paymentDateInput"),
   paymentWaterInput: document.querySelector("#paymentWaterInput"),
   paymentGarbageInput: document.querySelector("#paymentGarbageInput"),
+  deletePaymentButton: document.querySelector("#deletePaymentButton"),
   closePaymentDialogButton: document.querySelector("#closePaymentDialogButton"),
 
   reportForm: document.querySelector("#reportForm"),
@@ -794,7 +796,7 @@ function renderPayments() {
     <span>Balance: <strong>${formatMoney(totals.balance)}</strong></span>
   `;
   if (visiblePayments.length === 0) {
-    els.paymentTable.innerHTML = `<tr><td colspan="12"><div class="empty-state">No payments recorded yet.</div></td></tr>`;
+    els.paymentTable.innerHTML = `<tr><td colspan="13"><div class="empty-state">No payments recorded yet.</div></td></tr>`;
     return;
   }
 
@@ -813,6 +815,7 @@ function renderPayments() {
         <td>${formatMoney(p.totalDue)}</td>
         <td>${formatMoney(p.balance)}</td>
         <td><span class="pill ${Number(p.balance || 0) === 0 ? "approved" : "blocked"}">${Number(p.balance || 0) === 0 ? "Paid" : "Not paid"}</span></td>
+        <td><button class="action-button" data-edit-payment="${p.id}" type="button">Edit</button></td>
       </tr>
     `)
     .join("");
@@ -850,6 +853,9 @@ function renderWaterBills() {
 
 els.newPaymentButton.addEventListener("click", () => {
   els.paymentForm.reset();
+  els.paymentForm.dataset.editId = "";
+  els.paymentDialogTitle.textContent = "Record payment";
+  els.deletePaymentButton.hidden = true;
   els.paymentDialog.showModal();
 });
 
@@ -863,6 +869,24 @@ els.closeWaterBillDialogButton?.addEventListener("click", () => els.waterBillDia
 els.closePaymentDialogButton.addEventListener("click", () => els.paymentDialog.close());
 els.paymentTenantInput.addEventListener("change", updatePaymentHouse);
 
+els.paymentTable.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-edit-payment]");
+  if (!button) return;
+  const payment = state.payments.find((item) => String(item.id) === button.dataset.editPayment);
+  if (!payment) return;
+  els.paymentForm.dataset.editId = payment.id;
+  els.paymentTenantInput.value = payment.tenantId;
+  updatePaymentHouse();
+  els.paymentAmountInput.value = payment.amount || 0;
+  els.paymentMonthInput.value = payment.rentMonth || "";
+  els.paymentDateInput.value = payment.paymentDate || "";
+  els.paymentWaterInput.value = payment.waterAmount || 0;
+  els.paymentGarbageInput.value = payment.garbageAmount || 0;
+  els.paymentDialogTitle.textContent = "Edit payment";
+  els.deletePaymentButton.hidden = false;
+  els.paymentDialog.showModal();
+});
+
 els.paymentForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const payload = {
@@ -873,9 +897,19 @@ els.paymentForm.addEventListener("submit", async (event) => {
     waterAmount: Number(els.paymentWaterInput.value || 0),
     garbageAmount: Number(els.paymentGarbageInput.value || 0)
   };
-  await api("/api/payments", { method: "POST", body: JSON.stringify(payload) });
+  const editId = els.paymentForm.dataset.editId;
+  await api(editId ? `/api/payments/${editId}` : "/api/payments", { method: editId ? "PUT" : "POST", body: JSON.stringify(payload) });
   els.paymentDialog.close();
-  showToast("Payment recorded");
+  showToast(editId ? "Payment updated" : "Payment recorded");
+  await loadPayments();
+});
+
+els.deletePaymentButton.addEventListener("click", async () => {
+  const id = els.paymentForm.dataset.editId;
+  if (!id || !window.confirm("Delete this payment record?")) return;
+  await api(`/api/payments/${id}`, { method: "DELETE" });
+  els.paymentDialog.close();
+  showToast("Payment deleted");
   await loadPayments();
 });
 

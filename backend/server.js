@@ -193,6 +193,7 @@ async function initDb() {
       ALTER TABLE payments ADD COLUMN IF NOT EXISTS water_amount numeric NOT NULL DEFAULT 0;
       ALTER TABLE payments ADD COLUMN IF NOT EXISTS garbage_amount numeric NOT NULL DEFAULT 0;
       ALTER TABLE payments ADD COLUMN IF NOT EXISTS total_due numeric NOT NULL DEFAULT 0;
+      ALTER TABLE payments ADD COLUMN IF NOT EXISTS rent_month text;
     `);
   }
 
@@ -786,11 +787,13 @@ function mapPayment(p, tenantMap) {
     tenantId: p.tenant_id || p.tenantId,
     tenantName: tenant.name || "Unknown tenant",
     houseNumber: tenant.houseNumber || "Unknown",
-    houseType: tenant.houseType || "Unknown"
+    houseType: tenant.houseType || "Unknown",
+    rentMonth: p.rent_month || p.rentMonth || null,
+    paymentDate: p.payment_date || p.paymentDate || null
   };
 }
 
-async function createPayment({ tenantId, amount, paymentDate, rentAmount = 0, waterAmount = 0, garbageAmount = 0 }) {
+async function createPayment({ tenantId, amount, rentMonth, paymentDate, rentAmount = 0, waterAmount = 0, garbageAmount = 0 }) {
   const tenants = await getTenants();
   const tenant = tenants.find((t) => t.id === tenantId);
   const houses = await getHouses();
@@ -808,6 +811,8 @@ async function createPayment({ tenantId, amount, paymentDate, rentAmount = 0, wa
     tenant_id: tenantId,
     tenantId,
     amount: paidAmount,
+    rent_month: rentMonth,
+    rentMonth,
     payment_date: paymentDate,
     paymentDate,
     balance,
@@ -823,8 +828,8 @@ async function createPayment({ tenantId, amount, paymentDate, rentAmount = 0, wa
 
   if (usePostgres) {
     await pool.query(
-      "INSERT INTO payments (id, tenant_id, amount, payment_date, balance, rent_amount, water_amount, garbage_amount, total_due) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
-      [id, tenantId, paidAmount, paymentDate, balance, effectiveRent, effectiveWater, effectiveGarbage, totalDue]
+      "INSERT INTO payments (id, tenant_id, amount, rent_month, payment_date, balance, rent_amount, water_amount, garbage_amount, total_due) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
+      [id, tenantId, paidAmount, rentMonth, paymentDate, balance, effectiveRent, effectiveWater, effectiveGarbage, totalDue]
     );
   } else {
     const db = loadLocalDb();
@@ -843,6 +848,62 @@ async function createPayment({ tenantId, amount, paymentDate, rentAmount = 0, wa
   }
 
   return record;
+}
+
+async function updatePayment(id, { tenantId, amount, rentMonth, paymentDate, waterAmount = 0, garbageAmount = 0 }) {
+  let existing;
+  if (usePostgres) {
+    const result = await pool.query("SELECT * FROM payments WHERE id=$1", [id]);
+    existing = result.rows[0];
+  } else {
+    existing = loadLocalDb().payments.find((payment) => payment.id === id);
+  }
+  if (!existing) return null;
+
+  const tenants = await getTenants();
+  const tenant = tenants.find((item) => item.id === tenantId);
+  if (!tenant) return null;
+
+  const previousTenantId = existing.tenant_id || existing.tenantId;
+  let effectiveRent = Number(existing.rent_amount ?? existing.rentAmount ?? 0);
+  if (previousTenantId !== tenantId) {
+    const house = (await getHouses()).find((item) => item.id === tenant.houseId);
+    effectiveRent = Number(house?.rentAmount || 0);
+  }
+  const effectiveWater = Number(waterAmount || 0);
+  const effectiveGarbage = Number(garbageAmount || 0);
+  const totalDue = effectiveRent + effectiveWater + effectiveGarbage;
+  const paidAmount = Number(amount);
+  const balance = Math.max(totalDue - paidAmount, 0);
+
+  if (usePostgres) {
+    await pool.query(
+      "UPDATE payments SET tenant_id=$2, amount=$3, rent_month=$4, payment_date=$5, balance=$6, rent_amount=$7, water_amount=$8, garbage_amount=$9, total_due=$10 WHERE id=$1",
+      [id, tenantId, paidAmount, rentMonth, paymentDate, balance, effectiveRent, effectiveWater, effectiveGarbage, totalDue]
+    );
+  } else {
+    Object.assign(existing, {
+      tenant_id: tenantId, tenantId, amount: paidAmount, rent_month: rentMonth, rentMonth,
+      payment_date: paymentDate, paymentDate, balance, rent_amount: effectiveRent, rentAmount: effectiveRent,
+      water_amount: effectiveWater, waterAmount: effectiveWater, garbage_amount: effectiveGarbage,
+      garbageAmount: effectiveGarbage, total_due: totalDue, totalDue
+    });
+    saveLocalDb();
+  }
+  return { id, tenantId, amount: paidAmount, rentMonth, paymentDate, balance, rentAmount: effectiveRent, waterAmount: effectiveWater, garbageAmount: effectiveGarbage, totalDue };
+}
+
+async function deletePayment(id) {
+  if (usePostgres) {
+    const result = await pool.query("DELETE FROM payments WHERE id=$1", [id]);
+    return result.rowCount > 0;
+  }
+  const db = loadLocalDb();
+  const index = db.payments.findIndex((payment) => payment.id === id);
+  if (index === -1) return false;
+  db.payments.splice(index, 1);
+  saveLocalDb();
+  return true;
 }
 
 async function getWaterBills(user = null) {
@@ -1043,6 +1104,7 @@ async function handleApi(req, res, pathname) {
   }
 
   const matchTenant = pathname.match(/^\/api\/tenants\/([^/]+)$/);
+  const matchPayment = pathname.match(/^\/api\/payments\/([^/]+)$/);
   const matchApprove = pathname.match(/^\/api\/applications\/([^/]+)\/approve$/);
   const matchReject = pathname.match(/^\/api\/applications\/([^/]+)\/reject$/);
 
@@ -1357,18 +1419,48 @@ async function handleApi(req, res, pathname) {
     const user = await requireRole(res, req, ["manager", "landlord"]);
     if (!user) return;
     const body = await readRequestBody(req);
-    if (!body.tenantId || !body.amount || !body.paymentDate) {
-      sendError(res, 400, "Tenant, amount, and payment date are required", req);
+    if (!body.tenantId || !body.amount || !body.rentMonth || !body.paymentDate) {
+      sendError(res, 400, "Tenant, amount, rent month, and payment date are required", req);
       return;
     }
     const payment = await createPayment({
       tenantId: body.tenantId,
       amount: body.amount,
+      rentMonth: body.rentMonth,
       paymentDate: body.paymentDate,
       waterAmount: body.waterAmount,
       garbageAmount: body.garbageAmount
     });
     sendJson(res, 201, payment, req);
+    return;
+  }
+
+  if (req.method === "PUT" && matchPayment) {
+    const user = await requireRole(res, req, ["manager", "landlord"]);
+    if (!user) return;
+    const body = await readRequestBody(req);
+    if (!body.tenantId || !body.amount || !body.rentMonth || !body.paymentDate) {
+      sendError(res, 400, "Tenant, amount, rent month, and payment date are required", req);
+      return;
+    }
+    const payment = await updatePayment(matchPayment[1], body);
+    if (!payment) {
+      sendError(res, 404, "Payment or tenant not found", req);
+      return;
+    }
+    sendJson(res, 200, payment, req);
+    return;
+  }
+
+  if (req.method === "DELETE" && matchPayment) {
+    const user = await requireRole(res, req, ["manager", "landlord"]);
+    if (!user) return;
+    const deleted = await deletePayment(matchPayment[1]);
+    if (!deleted) {
+      sendError(res, 404, "Payment not found", req);
+      return;
+    }
+    sendJson(res, 200, { ok: true }, req);
     return;
   }
 
