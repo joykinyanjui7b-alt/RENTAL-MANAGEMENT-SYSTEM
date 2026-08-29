@@ -756,12 +756,16 @@ async function loadPayments() {
   state.paymentMonthFilter.value = months.includes(currentMonth) ? currentMonth : "";
   renderPayments();
 
+  const tenantOptions = (tenants) => [...tenants]
+    .sort((a, b) => String(a.houseNumber || "").localeCompare(String(b.houseNumber || ""), undefined, { numeric: true, sensitivity: "base" }))
+    .map((tenant) => `<option value="${tenant.id}">${escapeHtml(tenant.name)}</option>`)
+    .join("");
   const options = state.tenants.length
-    ? `<option value="" selected disabled>Select a tenant</option>${state.tenants.map((t) => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join("")}`
+    ? tenantOptions(state.tenants)
     : (await (async () => {
         const tData = await api("/api/tenants");
         state.tenants = tData.tenants || [];
-        return `<option value="" selected disabled>Select a tenant</option>${state.tenants.map((t) => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join("")}`;
+        return tenantOptions(state.tenants);
       })());
   els.paymentTenantInput.innerHTML = options;
   updatePaymentHouse();
