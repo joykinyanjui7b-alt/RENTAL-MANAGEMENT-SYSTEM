@@ -89,6 +89,7 @@ const els = {
   paymentTable: document.querySelector("#paymentTable"),
   paymentSummary: document.querySelector("#paymentSummary"),
   paymentMonthFilter: document.querySelector("#paymentMonthFilter"),
+  clearPaymentsButton: document.querySelector("#clearPaymentsButton"),
   newPaymentButton: document.querySelector("#newPaymentButton"),
   paymentDialog: document.querySelector("#paymentDialog"),
   paymentForm: document.querySelector("#paymentForm"),
@@ -822,6 +823,15 @@ function renderPayments() {
 }
 
 els.paymentMonthFilter.addEventListener("change", renderPayments);
+
+els.clearPaymentsButton.addEventListener("click", async () => {
+  if (!window.confirm("Delete ALL payment records? This cannot be undone.")) return;
+  if (!window.confirm("This removes every payment record and resets the payment list. Continue?")) return;
+  await api("/api/payments", { method: "DELETE" });
+  showToast("All payment records deleted");
+  await loadPayments();
+  await loadDashboard();
+});
 
 async function loadWaterBills() {
   const data = await api("/api/water-bills");

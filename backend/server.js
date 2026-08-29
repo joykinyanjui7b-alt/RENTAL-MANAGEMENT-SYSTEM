@@ -909,6 +909,21 @@ async function deletePayment(id) {
   return true;
 }
 
+async function deleteAllPayments() {
+  if (usePostgres) {
+    await pool.query("DELETE FROM payments");
+    await pool.query("UPDATE tenants SET rent_status='unpaid'");
+    return;
+  }
+  const db = loadLocalDb();
+  db.payments = [];
+  db.tenants.forEach((tenant) => {
+    tenant.rent_status = "unpaid";
+    tenant.rentStatus = "unpaid";
+  });
+  saveLocalDb();
+}
+
 async function getWaterBills(user = null) {
   const houses = await getHouses(user);
   const houseMap = Object.fromEntries(houses.map((h) => [h.id, h]));
@@ -1435,6 +1450,14 @@ async function handleApi(req, res, pathname) {
       garbageAmount: body.garbageAmount
     });
     sendJson(res, 201, payment, req);
+    return;
+  }
+
+  if (req.method === "DELETE" && pathname === "/api/payments") {
+    const user = await requireRole(res, req, ["manager", "landlord"]);
+    if (!user) return;
+    await deleteAllPayments();
+    sendJson(res, 200, { ok: true }, req);
     return;
   }
 
