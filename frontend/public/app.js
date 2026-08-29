@@ -756,18 +756,22 @@ async function loadPayments() {
   state.paymentMonthFilter.value = months.includes(currentMonth) ? currentMonth : "";
   renderPayments();
 
-  const tenantOptions = (tenants) => [...tenants]
+  await populatePaymentTenants();
+}
+
+function paymentTenantOptions(tenants) {
+  return [...tenants]
     .sort((a, b) => String(a.houseNumber || "").localeCompare(String(b.houseNumber || ""), undefined, { numeric: true, sensitivity: "base" }))
     .map((tenant) => `<option value="${tenant.id}">${escapeHtml(tenant.name)}</option>`)
     .join("");
-  const options = state.tenants.length
-    ? tenantOptions(state.tenants)
-    : (await (async () => {
-        const tData = await api("/api/tenants");
-        state.tenants = tData.tenants || [];
-        return tenantOptions(state.tenants);
-      })());
-  els.paymentTenantInput.innerHTML = options;
+}
+
+async function populatePaymentTenants() {
+  if (!state.tenants.length) {
+    const data = await api("/api/tenants");
+    state.tenants = data.tenants || [];
+  }
+  els.paymentTenantInput.innerHTML = paymentTenantOptions(state.tenants);
   updatePaymentHouse();
 }
 
@@ -863,12 +867,17 @@ function renderWaterBills() {
     .join("");
 }
 
-els.newPaymentButton.addEventListener("click", () => {
+els.newPaymentButton.addEventListener("click", async () => {
   els.paymentForm.reset();
   els.paymentForm.dataset.editId = "";
   els.paymentDialogTitle.textContent = "Record payment";
   els.deletePaymentButton.hidden = true;
-  els.paymentDialog.showModal();
+  try {
+    await populatePaymentTenants();
+    els.paymentDialog.showModal();
+  } catch (error) {
+    showToast("Tenant names could not load. Please try again.");
+  }
 });
 
 els.newWaterBillButton?.addEventListener("click", () => {
