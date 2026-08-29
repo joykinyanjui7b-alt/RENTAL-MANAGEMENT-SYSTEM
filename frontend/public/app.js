@@ -782,7 +782,7 @@ function formatPaymentMonth(value) {
 }
 
 function updatePaymentHouse() {
-  const tenant = state.tenants.find((item) => item.id === els.paymentTenantInput.value);
+  const tenant = state.tenants.find((item) => String(item.id) === String(els.paymentTenantInput.value));
   els.paymentHouseInput.value = tenant?.houseNumber || "";
 }
 
@@ -910,6 +910,15 @@ els.paymentTable.addEventListener("click", (event) => {
 
 els.paymentForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  const tenant = state.tenants.find((item) => String(item.id) === String(els.paymentTenantInput.value));
+  if (!tenant) {
+    showToast("Choose a tenant name from the list.");
+    return;
+  }
+  if (!tenant.houseNumber || tenant.houseNumber === "Unassigned") {
+    showToast("This tenant has no house assigned. Update the tenant record first.");
+    return;
+  }
   const payload = {
     tenantId: els.paymentTenantInput.value,
     amount: els.paymentAmountInput.value,
@@ -918,13 +927,17 @@ els.paymentForm.addEventListener("submit", async (event) => {
     waterAmount: Number(els.paymentWaterInput.value || 0),
     garbageAmount: Number(els.paymentGarbageInput.value || 0)
   };
-  const editId = els.paymentForm.dataset.editId;
-  await api(editId ? `/api/payments/${editId}` : "/api/payments", { method: editId ? "PUT" : "POST", body: JSON.stringify(payload) });
-  els.paymentDialog.close();
-  showToast(editId ? "Payment updated" : "Payment recorded");
-  // Always show all months after saving so the new record is visible.
-  els.paymentMonthFilter.value = "";
-  await loadPayments();
+  try {
+    const editId = els.paymentForm.dataset.editId;
+    await api(editId ? `/api/payments/${editId}` : "/api/payments", { method: editId ? "PUT" : "POST", body: JSON.stringify(payload) });
+    els.paymentDialog.close();
+    showToast(editId ? "Payment updated" : "Payment recorded");
+    // Always show all months after saving so the new record is visible.
+    els.paymentMonthFilter.value = "";
+    await loadPayments();
+  } catch (error) {
+    showToast(error.message || "Payment could not be saved. Please try again.");
+  }
 });
 
 els.deletePaymentButton.addEventListener("click", async () => {
