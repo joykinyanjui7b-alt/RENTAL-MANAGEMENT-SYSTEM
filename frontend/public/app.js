@@ -922,6 +922,8 @@ els.paymentForm.addEventListener("submit", async (event) => {
   await api(editId ? `/api/payments/${editId}` : "/api/payments", { method: editId ? "PUT" : "POST", body: JSON.stringify(payload) });
   els.paymentDialog.close();
   showToast(editId ? "Payment updated" : "Payment recorded");
+  // Always show all months after saving so the new record is visible.
+  els.paymentMonthFilter.value = "";
   await loadPayments();
 });
 
