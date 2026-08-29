@@ -757,11 +757,11 @@ async function loadPayments() {
   renderPayments();
 
   const options = state.tenants.length
-    ? state.tenants.map((t) => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join("")
+    ? `<option value="" selected disabled>Select a tenant</option>${state.tenants.map((t) => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join("")}`
     : (await (async () => {
         const tData = await api("/api/tenants");
         state.tenants = tData.tenants || [];
-        return state.tenants.map((t) => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join("");
+        return `<option value="" selected disabled>Select a tenant</option>${state.tenants.map((t) => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join("")}`;
       })());
   els.paymentTenantInput.innerHTML = options;
   updatePaymentHouse();
@@ -775,9 +775,7 @@ function formatPaymentMonth(value) {
 
 function updatePaymentHouse() {
   const tenant = state.tenants.find((item) => item.id === els.paymentTenantInput.value);
-  els.paymentHouseInput.innerHTML = tenant
-    ? `<option value="${tenant.houseId}">${escapeHtml(tenant.houseNumber)}</option>`
-    : "";
+  els.paymentHouseInput.value = tenant?.houseNumber || "";
 }
 
 function renderPayments() {
