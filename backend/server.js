@@ -1269,7 +1269,7 @@ async function handleApi(req, res, pathname) {
       totalTenants: tenants.filter((tenant) => tenant.status === "active").length,
       occupiedHouses: houses.filter((h) => h.status === "occupied").length,
       pendingApplications: applications.filter((a) => a.status === "pending").length,
-      rentCollected: payments.reduce((sum, p) => sum + p.amount, 0),
+      rentCollected: payments.reduce((sum, p) => sum + Number(p.amount || 0), 0),
       unpaidRent: tenants.filter((t) => t.rentStatus !== "paid").reduce((sum, t) => {
         const house = houses.find((h) => h.id === t.houseId);
         return sum + (house ? house.rentAmount : 0);
