@@ -194,6 +194,9 @@ async function initDb() {
       ALTER TABLE payments ADD COLUMN IF NOT EXISTS garbage_amount numeric NOT NULL DEFAULT 0;
       ALTER TABLE payments ADD COLUMN IF NOT EXISTS total_due numeric NOT NULL DEFAULT 0;
       ALTER TABLE payments ADD COLUMN IF NOT EXISTS rent_month text;
+      UPDATE payments
+      SET rent_month = TO_CHAR(payment_date, 'YYYY-MM')
+      WHERE rent_month IS NULL OR rent_month = '';
     `);
   }
 
@@ -788,7 +791,7 @@ function mapPayment(p, tenantMap) {
     tenantName: tenant.name || "Unknown tenant",
     houseNumber: tenant.houseNumber || "Unknown",
     houseType: tenant.houseType || "Unknown",
-    rentMonth: p.rent_month || p.rentMonth || null,
+    rentMonth: p.rent_month || p.rentMonth || String(p.payment_date || p.paymentDate || "").slice(0, 7) || null,
     paymentDate: p.payment_date || p.paymentDate || null
   };
 }
