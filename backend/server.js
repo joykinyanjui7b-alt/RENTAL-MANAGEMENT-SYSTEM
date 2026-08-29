@@ -768,17 +768,14 @@ async function rejectApplication(id) {
 async function getPayments(user = null) {
   const tenants = await getTenants(user);
   const tenantMap = Object.fromEntries(tenants.map((t) => [t.id, t]));
-  const allowedTenantIds = new Set(Object.keys(tenantMap));
 
   if (usePostgres) {
     const result = await pool.query("SELECT * FROM payments ORDER BY payment_date DESC");
     return result.rows
-      .filter((p) => allowedTenantIds.has(p.tenant_id))
       .map((p) => mapPayment(p, tenantMap));
   }
   const db = loadLocalDb();
   return [...db.payments]
-    .filter((p) => allowedTenantIds.has(p.tenant_id))
     .sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date))
     .map((p) => mapPayment(p, tenantMap));
 }
