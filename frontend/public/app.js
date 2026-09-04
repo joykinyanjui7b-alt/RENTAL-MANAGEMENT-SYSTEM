@@ -243,7 +243,11 @@ async function loadUser() {
   // cold start, etc.) should show a retry message — NOT kick the user
   // back to the login screen.
   try {
-    await Promise.all([loadHouses(), loadDashboard()]);
+    const managementLoads = [loadHouses(), loadDashboard()];
+    if (data.user.role === "manager" || data.user.role === "landlord") {
+      managementLoads.push(loadTenants(), loadPayments());
+    }
+    await Promise.all(managementLoads);
   } catch (error) {
     showToast("Some data failed to load. Refreshing may help.");
   }
@@ -750,11 +754,12 @@ els.tenantApplicationForm.addEventListener("submit", async (event) => {
 async function loadPayments() {
   const data = await api("/api/payments");
   state.payments = data.payments || [];
-  const currentMonth = state.paymentMonthFilter.value;
+  const currentMonth = els.paymentMonthFilter.value;
   const months = [...new Set(state.payments.map((payment) => payment.rentMonth).filter(Boolean))].sort().reverse();
-  state.paymentMonthFilter.innerHTML = `<option value="">All months</option>${months.map((month) => `<option value="${escapeHtml(month)}">${escapeHtml(formatPaymentMonth(month))}</option>`).join("")}`;
-  state.paymentMonthFilter.value = months.includes(currentMonth) ? currentMonth : "";
+  els.paymentMonthFilter.innerHTML = `<option value="">All months</option>${months.map((month) => `<option value="${escapeHtml(month)}">${escapeHtml(formatPaymentMonth(month))}</option>`).join("")}`;
+  els.paymentMonthFilter.value = months.includes(currentMonth) ? currentMonth : "";
   renderPayments();
+  if (state.tenants.length) renderTenants();
 
   await populatePaymentTenants();
 }
@@ -787,8 +792,8 @@ function updatePaymentHouse() {
 }
 
 function renderPayments() {
-  const visiblePayments = state.paymentMonthFilter.value
-    ? state.payments.filter((payment) => payment.rentMonth === state.paymentMonthFilter.value)
+  const visiblePayments = els.paymentMonthFilter.value
+    ? state.payments.filter((payment) => payment.rentMonth === els.paymentMonthFilter.value)
     : state.payments;
   const totals = visiblePayments.reduce((summary, payment) => ({
     paid: summary.paid + Number(payment.amount || 0),
@@ -835,8 +840,7 @@ els.clearPaymentsButton.addEventListener("click", async () => {
   if (!window.confirm("This removes every payment record and resets the payment list. Continue?")) return;
   await api("/api/payments", { method: "DELETE" });
   showToast("All payment records deleted");
-  await loadPayments();
-  await loadDashboard();
+  await Promise.all([loadPayments(), loadDashboard(), loadTenants()]);
 });
 
 async function loadWaterBills() {
@@ -934,7 +938,7 @@ els.paymentForm.addEventListener("submit", async (event) => {
     showToast(editId ? "Payment updated" : "Payment recorded");
     // Always show all months after saving so the new record is visible.
     els.paymentMonthFilter.value = "";
-    await loadPayments();
+    await Promise.all([loadPayments(), loadDashboard(), loadTenants()]);
   } catch (error) {
     showToast(error.message || "Payment could not be saved. Please try again.");
   }
@@ -946,7 +950,7 @@ els.deletePaymentButton.addEventListener("click", async () => {
   await api(`/api/payments/${id}`, { method: "DELETE" });
   els.paymentDialog.close();
   showToast("Payment deleted");
-  await loadPayments();
+  await Promise.all([loadPayments(), loadDashboard(), loadTenants()]);
 });
 
 els.waterBillForm?.addEventListener("submit", async (event) => {
