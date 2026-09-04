@@ -792,9 +792,10 @@ function updatePaymentHouse() {
 }
 
 function renderPayments() {
-  const visiblePayments = els.paymentMonthFilter.value
+  const filteredPayments = els.paymentMonthFilter.value
     ? state.payments.filter((payment) => payment.rentMonth === els.paymentMonthFilter.value)
     : state.payments;
+  const visiblePayments = [...filteredPayments].sort(comparePaymentsByHouse);
   const totals = visiblePayments.reduce((summary, payment) => ({
     paid: summary.paid + Number(payment.amount || 0),
     water: summary.water + Number(payment.waterAmount || 0),
@@ -831,6 +832,16 @@ function renderPayments() {
       </tr>
     `)
     .join("");
+}
+
+function comparePaymentsByHouse(left, right) {
+  const leftHouse = String(left.houseNumber || "").trim();
+  const rightHouse = String(right.houseNumber || "").trim();
+  const leftMissing = !leftHouse || leftHouse.toLowerCase() === "unknown";
+  const rightMissing = !rightHouse || rightHouse.toLowerCase() === "unknown";
+  if (leftMissing !== rightMissing) return leftMissing ? 1 : -1;
+  if (leftMissing) return 0;
+  return leftHouse.localeCompare(rightHouse, undefined, { numeric: true, sensitivity: "base" });
 }
 
 els.paymentMonthFilter.addEventListener("change", renderPayments);
