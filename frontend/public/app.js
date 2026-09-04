@@ -95,6 +95,7 @@ const els = {
   paymentForm: document.querySelector("#paymentForm"),
   paymentDialogTitle: document.querySelector("#paymentDialogTitle"),
   paymentTenantInput: document.querySelector("#paymentTenantInput"),
+  paymentTenantNameInput: document.querySelector("#paymentTenantNameInput"),
   paymentHouseInput: document.querySelector("#paymentHouseInput"),
   paymentAmountInput: document.querySelector("#paymentAmountInput"),
   paymentMonthInput: document.querySelector("#paymentMonthInput"),
@@ -788,6 +789,7 @@ function formatPaymentMonth(value) {
 
 function updatePaymentHouse() {
   const tenant = state.tenants.find((item) => String(item.id) === String(els.paymentTenantInput.value));
+  els.paymentTenantNameInput.value = tenant?.name || "";
   els.paymentHouseInput.value = tenant?.houseNumber || "";
 }
 
@@ -925,6 +927,7 @@ els.paymentTable.addEventListener("click", (event) => {
   els.paymentForm.dataset.editId = payment.id;
   els.paymentTenantInput.value = payment.tenantId;
   updatePaymentHouse();
+  els.paymentTenantNameInput.value = payment.tenantName || "";
   els.paymentAmountInput.value = payment.amount || 0;
   els.paymentMonthInput.value = payment.rentMonth || "";
   els.paymentDateInput.value = payment.paymentDate || "";
@@ -946,6 +949,11 @@ els.paymentForm.addEventListener("submit", async (event) => {
     showToast("This tenant has no house assigned. Update the tenant record first.");
     return;
   }
+  const tenantName = els.paymentTenantNameInput.value.trim();
+  if (!tenantName) {
+    showToast("Enter the tenant name.");
+    return;
+  }
   const payload = {
     tenantId: els.paymentTenantInput.value,
     amount: els.paymentAmountInput.value,
@@ -955,6 +963,23 @@ els.paymentForm.addEventListener("submit", async (event) => {
     garbageAmount: Number(els.paymentGarbageInput.value || 0)
   };
   try {
+    if (tenantName !== tenant.name) {
+      await api(`/api/tenants/${tenant.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          name: tenantName,
+          phone: tenant.phone,
+          email: tenant.email || "",
+          houseId: tenant.houseId,
+          moveInDate: tenant.moveInDate,
+          moveOutDate: tenant.moveOutDate || null,
+          depositAmount: tenant.depositAmount,
+          rentPaid: tenant.rentPaid,
+          waterDeposit: tenant.waterDeposit
+        })
+      });
+      tenant.name = tenantName;
+    }
     const editId = els.paymentForm.dataset.editId;
     await api(editId ? `/api/payments/${editId}` : "/api/payments", { method: editId ? "PUT" : "POST", body: JSON.stringify(payload) });
     els.paymentDialog.close();
