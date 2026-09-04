@@ -771,14 +771,28 @@ async function getPayments(user = null) {
   const tenantMap = Object.fromEntries(tenants.map((t) => [t.id, t]));
 
   if (usePostgres) {
-    const result = await pool.query("SELECT * FROM payments ORDER BY payment_date DESC");
+    const result = await pool.query("SELECT * FROM payments");
     return result.rows
-      .map((p) => mapPayment(p, tenantMap));
+      .map((p) => mapPayment(p, tenantMap))
+      .sort(comparePaymentsByHouse);
   }
   const db = loadLocalDb();
   return [...db.payments]
-    .sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date))
-    .map((p) => mapPayment(p, tenantMap));
+    .map((p) => mapPayment(p, tenantMap))
+    .sort(comparePaymentsByHouse);
+}
+
+function comparePaymentsByHouse(left, right) {
+  const leftHouse = String(left.houseNumber || "").trim();
+  const rightHouse = String(right.houseNumber || "").trim();
+  const leftMissing = !leftHouse || leftHouse.toLowerCase() === "unknown";
+  const rightMissing = !rightHouse || rightHouse.toLowerCase() === "unknown";
+  if (leftMissing !== rightMissing) return leftMissing ? 1 : -1;
+  if (!leftMissing) {
+    const houseOrder = leftHouse.localeCompare(rightHouse, undefined, { numeric: true, sensitivity: "base" });
+    if (houseOrder !== 0) return houseOrder;
+  }
+  return String(left.paymentDate || "").localeCompare(String(right.paymentDate || ""));
 }
 
 function mapPayment(p, tenantMap) {
