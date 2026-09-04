@@ -180,6 +180,7 @@ async function initDb() {
       ALTER TABLE tenants ADD COLUMN IF NOT EXISTS deposit_amount numeric NOT NULL DEFAULT 0;
       ALTER TABLE tenants ADD COLUMN IF NOT EXISTS rent_paid numeric NOT NULL DEFAULT 0;
       ALTER TABLE tenants ADD COLUMN IF NOT EXISTS water_deposit numeric NOT NULL DEFAULT 0;
+      ALTER TABLE tenants ADD COLUMN IF NOT EXISTS rent_status text NOT NULL DEFAULT 'unpaid';
       ALTER TABLE applications ADD COLUMN IF NOT EXISTS message text;
       ALTER TABLE houses ADD COLUMN IF NOT EXISTS room_type text;
       ALTER TABLE houses ADD COLUMN IF NOT EXISTS house_name text;
@@ -783,14 +784,43 @@ async function getPayments(user = null) {
 function mapPayment(p, tenantMap) {
   const tenant = tenantMap[p.tenant_id || p.tenantId] || {};
   return {
-    ...p,
+    id: p.id,
     tenantId: p.tenant_id || p.tenantId,
+    amount: Number(p.amount || 0),
     tenantName: tenant.name || "Unknown tenant",
     houseNumber: tenant.houseNumber || "Unknown",
     houseType: tenant.houseType || "Unknown",
     rentMonth: p.rent_month || p.rentMonth || String(p.payment_date || p.paymentDate || "").slice(0, 7) || null,
-    paymentDate: p.payment_date || p.paymentDate || null
+    paymentDate: p.payment_date || p.paymentDate || null,
+    balance: Number(p.balance || 0),
+    rentAmount: Number(p.rent_amount ?? p.rentAmount ?? 0),
+    waterAmount: Number(p.water_amount ?? p.waterAmount ?? 0),
+    garbageAmount: Number(p.garbage_amount ?? p.garbageAmount ?? 0),
+    totalDue: Number(p.total_due ?? p.totalDue ?? 0)
   };
+}
+
+async function syncTenantRentStatus(tenantId) {
+  const targetTenantId = String(tenantId || "");
+  if (!targetTenantId) return;
+
+  const payments = await getPayments();
+  const tenantPayments = payments.filter((payment) => String(payment.tenantId) === targetTenantId);
+  const outstandingBalance = tenantPayments.reduce((sum, payment) => sum + Number(payment.balance || 0), 0);
+  const rentStatus = outstandingBalance > 0 ? "unpaid" : "paid";
+
+  if (usePostgres) {
+    await pool.query("UPDATE tenants SET rent_status = $1 WHERE id = $2", [rentStatus, targetTenantId]);
+    return;
+  }
+
+  const db = loadLocalDb();
+  const tenant = db.tenants.find((item) => item.id === targetTenantId);
+  if (tenant) {
+    tenant.rent_status = rentStatus;
+    tenant.rentStatus = rentStatus;
+    saveLocalDb();
+  }
 }
 
 async function createPayment({ tenantId, amount, rentMonth, paymentDate, rentAmount = 0, waterAmount = 0, garbageAmount = 0 }) {
@@ -837,15 +867,7 @@ async function createPayment({ tenantId, amount, rentMonth, paymentDate, rentAmo
     saveLocalDb();
   }
 
-  if (!usePostgres) {
-    const db = loadLocalDb();
-    const t = db.tenants.find((item) => item.id === tenantId);
-    if (t) {
-      t.rent_status = balance === 0 ? "paid" : "unpaid";
-      t.rentStatus = t.rent_status;
-      saveLocalDb();
-    }
-  }
+  await syncTenantRentStatus(tenantId);
 
   return record;
 }
@@ -890,19 +912,38 @@ async function updatePayment(id, { tenantId, amount, rentMonth, paymentDate, wat
     });
     saveLocalDb();
   }
+
+  await syncTenantRentStatus(tenantId);
+  if (previousTenantId && previousTenantId !== tenantId) {
+    await syncTenantRentStatus(previousTenantId);
+  }
+
   return { id, tenantId, amount: paidAmount, rentMonth, paymentDate, balance, rentAmount: effectiveRent, waterAmount: effectiveWater, garbageAmount: effectiveGarbage, totalDue };
 }
 
 async function deletePayment(id) {
+  const existingPayment = usePostgres
+    ? (await pool.query("SELECT * FROM payments WHERE id=$1", [id])).rows[0]
+    : loadLocalDb().payments.find((payment) => payment.id === id);
+
+  if (!existingPayment) return false;
+
+  const tenantId = existingPayment.tenant_id || existingPayment.tenantId;
+
   if (usePostgres) {
     const result = await pool.query("DELETE FROM payments WHERE id=$1", [id]);
-    return result.rowCount > 0;
+    if (result.rowCount > 0) {
+      await syncTenantRentStatus(tenantId);
+      return true;
+    }
+    return false;
   }
   const db = loadLocalDb();
   const index = db.payments.findIndex((payment) => payment.id === id);
   if (index === -1) return false;
   db.payments.splice(index, 1);
   saveLocalDb();
+  await syncTenantRentStatus(tenantId);
   return true;
 }
 
