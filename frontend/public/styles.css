@@ -460,6 +460,15 @@ tbody tr:hover {
   text-transform: uppercase;
 }
 
+#paymentTable tr.payment-month-total td {
+  padding-top: 12px;
+  padding-bottom: 14px;
+  border-top: 2px solid var(--line-strong);
+  background: var(--surface-strong);
+  color: var(--ink);
+  font-weight: 900;
+}
+
 td p {
   margin: 4px 0 0;
   color: var(--muted);

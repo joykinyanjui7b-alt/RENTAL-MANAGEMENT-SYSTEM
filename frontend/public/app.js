@@ -820,6 +820,15 @@ function renderPayments() {
       const previousPayment = visiblePayments[index - 1];
       const startsMonthGroup = index === 0 || p.rentMonth !== previousPayment?.rentMonth;
       const startsHouseGroup = !startsMonthGroup && p.houseNumber !== previousPayment?.houseNumber;
+      const nextPayment = visiblePayments[index + 1];
+      const endsMonthGroup = !nextPayment || p.rentMonth !== nextPayment.rentMonth;
+      const monthPayments = endsMonthGroup ? visiblePayments.filter((payment) => payment.rentMonth === p.rentMonth) : [];
+      const monthTotals = monthPayments.reduce((summary, payment) => ({
+        rent: summary.rent + Number(payment.rentAmount || 0),
+        water: summary.water + Number(payment.waterAmount || 0),
+        garbage: summary.garbage + Number(payment.garbageAmount || 0),
+        totalDue: summary.totalDue + Number(payment.totalDue || 0)
+      }), { rent: 0, water: 0, garbage: 0, totalDue: 0 });
       return `${startsMonthGroup ? `<tr class="payment-month-divider"><td colspan="13">${escapeHtml(formatPaymentMonth(p.rentMonth))}</td></tr>` : ""}
       <tr class="${startsHouseGroup ? "payment-group-start" : ""}">
         <td>${escapeHtml(p.tenantName)}</td>
@@ -835,7 +844,15 @@ function renderPayments() {
         <td>${formatMoney(p.balance)}</td>
         <td><span class="pill ${Number(p.balance || 0) === 0 ? "approved" : "blocked"}">${Number(p.balance || 0) === 0 ? "Paid" : "Not paid"}</span></td>
         <td><button class="action-button" data-edit-payment="${p.id}" type="button">Edit</button></td>
-      </tr>
+      </tr>${endsMonthGroup ? `
+      <tr class="payment-month-total">
+        <td colspan="6">${escapeHtml(formatPaymentMonth(p.rentMonth))} total</td>
+        <td>${formatMoney(monthTotals.rent)}</td>
+        <td>${formatMoney(monthTotals.water)}</td>
+        <td>${formatMoney(monthTotals.garbage)}</td>
+        <td>${formatMoney(monthTotals.totalDue)}</td>
+        <td colspan="3"></td>
+      </tr>` : ""}
     `;
     })
     .join("");
