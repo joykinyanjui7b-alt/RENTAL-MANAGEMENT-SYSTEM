@@ -795,7 +795,7 @@ function renderPayments() {
   const filteredPayments = els.paymentMonthFilter.value
     ? state.payments.filter((payment) => payment.rentMonth === els.paymentMonthFilter.value)
     : state.payments;
-  const visiblePayments = [...filteredPayments].sort(comparePaymentsByHouse);
+  const visiblePayments = [...filteredPayments].sort(comparePaymentsByMonthAndHouse);
   const totals = visiblePayments.reduce((summary, payment) => ({
     paid: summary.paid + Number(payment.amount || 0),
     water: summary.water + Number(payment.waterAmount || 0),
@@ -816,8 +816,9 @@ function renderPayments() {
   els.paymentTable.innerHTML = visiblePayments
     .map((p, index) => {
       const previousPayment = visiblePayments[index - 1];
-      const startsHouseGroup = index > 0 && p.houseNumber !== previousPayment?.houseNumber;
-      return `
+      const startsMonthGroup = index === 0 || p.rentMonth !== previousPayment?.rentMonth;
+      const startsHouseGroup = !startsMonthGroup && p.houseNumber !== previousPayment?.houseNumber;
+      return `${startsMonthGroup ? `<tr class="payment-month-divider"><td colspan="13">${escapeHtml(formatPaymentMonth(p.rentMonth))}</td></tr>` : ""}
       <tr class="${startsHouseGroup ? "payment-group-start" : ""}">
         <td>${escapeHtml(p.tenantName)}</td>
         <td>${escapeHtml(p.houseNumber)}</td>
@@ -846,6 +847,13 @@ function comparePaymentsByHouse(left, right) {
   if (leftMissing !== rightMissing) return leftMissing ? 1 : -1;
   if (leftMissing) return 0;
   return leftHouse.localeCompare(rightHouse, undefined, { numeric: true, sensitivity: "base" });
+}
+
+function comparePaymentsByMonthAndHouse(left, right) {
+  const leftMonth = String(left.rentMonth || "9999-99");
+  const rightMonth = String(right.rentMonth || "9999-99");
+  const monthOrder = leftMonth.localeCompare(rightMonth);
+  return monthOrder || comparePaymentsByHouse(left, right);
 }
 
 els.paymentMonthFilter.addEventListener("change", renderPayments);
