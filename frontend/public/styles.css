@@ -445,6 +445,10 @@ tbody tr:hover {
   background: rgba(31, 122, 107, 0.04);
 }
 
+#paymentTable tr.payment-group-start td {
+  border-top: 10px solid var(--surface);
+}
+
 td p {
   margin: 4px 0 0;
   color: var(--muted);

@@ -814,8 +814,11 @@ function renderPayments() {
   }
 
   els.paymentTable.innerHTML = visiblePayments
-    .map((p) => `
-      <tr>
+    .map((p, index) => {
+      const previousPayment = visiblePayments[index - 1];
+      const startsHouseGroup = index > 0 && p.houseNumber !== previousPayment?.houseNumber;
+      return `
+      <tr class="${startsHouseGroup ? "payment-group-start" : ""}">
         <td>${escapeHtml(p.tenantName)}</td>
         <td>${escapeHtml(p.houseNumber)}</td>
         <td>${escapeHtml(p.houseType || "House type not set")}</td>
@@ -830,7 +833,8 @@ function renderPayments() {
         <td><span class="pill ${Number(p.balance || 0) === 0 ? "approved" : "blocked"}">${Number(p.balance || 0) === 0 ? "Paid" : "Not paid"}</span></td>
         <td><button class="action-button" data-edit-payment="${p.id}" type="button">Edit</button></td>
       </tr>
-    `)
+    `;
+    })
     .join("");
 }
 
