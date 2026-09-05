@@ -757,6 +757,12 @@ async function loadPayments() {
   state.payments = data.payments || [];
   const currentMonth = els.paymentMonthFilter.value;
   const months = [...new Set(state.payments.map((payment) => payment.rentMonth).filter(Boolean))].sort().reverse();
+  if (months.length) {
+    const latestMonth = new Date(`${months[0]}-01T00:00:00`);
+    latestMonth.setMonth(latestMonth.getMonth() + 1);
+    const nextMonth = latestMonth.toISOString().slice(0, 7);
+    if (!months.includes(nextMonth)) months.unshift(nextMonth);
+  }
   els.paymentMonthFilter.innerHTML = `<option value="">All months</option>${months.map((month) => `<option value="${escapeHtml(month)}">${escapeHtml(formatPaymentMonth(month))}</option>`).join("")}`;
   els.paymentMonthFilter.value = months.includes(currentMonth) ? currentMonth : "";
   renderPayments();
@@ -811,7 +817,10 @@ function renderPayments() {
     <span>Balance: <strong>${formatMoney(totals.balance)}</strong></span>
   `;
   if (visiblePayments.length === 0) {
-    els.paymentTable.innerHTML = `<tr><td colspan="13"><div class="empty-state">No payments recorded yet.</div></td></tr>`;
+    const selectedMonth = els.paymentMonthFilter.value;
+    els.paymentTable.innerHTML = selectedMonth
+      ? `<tr class="payment-month-divider"><td colspan="13">${escapeHtml(formatPaymentMonth(selectedMonth))}</td></tr><tr><td colspan="13"><div class="empty-state">No payments recorded for this month yet.</div></td></tr>`
+      : `<tr><td colspan="13"><div class="empty-state">No payments recorded yet.</div></td></tr>`;
     return;
   }
 
