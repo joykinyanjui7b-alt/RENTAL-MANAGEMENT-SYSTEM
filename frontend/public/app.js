@@ -91,6 +91,7 @@ const els = {
   paymentMonthFilter: document.querySelector("#paymentMonthFilter"),
   clearPaymentsButton: document.querySelector("#clearPaymentsButton"),
   newPaymentButton: document.querySelector("#newPaymentButton"),
+  newPaymentTenantButton: document.querySelector("#newPaymentTenantButton"),
   paymentDialog: document.querySelector("#paymentDialog"),
   paymentForm: document.querySelector("#paymentForm"),
   paymentDialogTitle: document.querySelector("#paymentDialogTitle"),
@@ -860,7 +861,8 @@ function renderPayments() {
         <td>${formatMoney(monthTotals.water)}</td>
         <td>${formatMoney(monthTotals.garbage)}</td>
         <td>${formatMoney(monthTotals.totalDue)}</td>
-        <td colspan="3"></td>
+        <td colspan="2"></td>
+        <td><button class="action-button" data-record-payment-month="${escapeHtml(p.rentMonth || "")}" type="button">+ Record payment</button></td>
       </tr>` : ""}
     `;
     })
@@ -922,17 +924,25 @@ function renderWaterBills() {
     .join("");
 }
 
-els.newPaymentButton.addEventListener("click", async () => {
+async function openPaymentDialog(rentMonth = "") {
   els.paymentForm.reset();
   els.paymentForm.dataset.editId = "";
   els.paymentDialogTitle.textContent = "Record payment";
   els.deletePaymentButton.hidden = true;
   try {
     await populatePaymentTenants();
+    els.paymentMonthInput.value = rentMonth;
     els.paymentDialog.showModal();
   } catch (error) {
     showToast("Tenant names could not load. Please try again.");
   }
+}
+
+els.newPaymentButton.addEventListener("click", () => openPaymentDialog());
+
+els.newPaymentTenantButton.addEventListener("click", () => {
+  resetTenantForm();
+  els.tenantDialog.showModal();
 });
 
 els.newWaterBillButton?.addEventListener("click", () => {
@@ -946,6 +956,11 @@ els.closePaymentDialogButton.addEventListener("click", () => els.paymentDialog.c
 els.paymentTenantInput.addEventListener("change", updatePaymentHouse);
 
 els.paymentTable.addEventListener("click", (event) => {
+  const monthButton = event.target.closest("[data-record-payment-month]");
+  if (monthButton) {
+    openPaymentDialog(monthButton.dataset.recordPaymentMonth);
+    return;
+  }
   const button = event.target.closest("[data-edit-payment]");
   if (!button) return;
   const payment = state.payments.find((item) => String(item.id) === button.dataset.editPayment);
