@@ -583,6 +583,23 @@ dialog::backdrop {
   gap: 14px;
 }
 
+.payment-extra-fields {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: rgba(31, 122, 107, 0.06);
+}
+
+.payment-extra-heading {
+  color: var(--accent-dark);
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .toast {
   position: fixed;
   right: 22px;

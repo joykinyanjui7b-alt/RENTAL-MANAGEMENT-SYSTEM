@@ -527,15 +527,18 @@
             <input id="paymentGarbageInput" type="number" min="0" step="1" value="0">
           </label>
         </div>
-        <div class="form-row">
+        <div class="payment-extra-fields">
+          <div class="payment-extra-heading">Balance and notes</div>
+          <div class="form-row">
           <label>
             <span>Balance remaining</span>
             <input id="paymentBalanceInput" type="number" min="0" step="1" placeholder="Leave blank to calculate automatically">
           </label>
           <label>
             <span>Additional notes</span>
-            <input id="paymentNotesInput" type="text" maxlength="240" placeholder="e.g. Half rent, balance due next month">
+            <textarea id="paymentNotesInput" rows="2" maxlength="240" placeholder="e.g. Half rent, balance due next month"></textarea>
           </label>
+          </div>
         </div>
         <div class="modal-actions">
           <button class="secondary-button" id="deletePaymentButton" type="button" hidden>Delete</button>
