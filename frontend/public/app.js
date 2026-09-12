@@ -103,6 +103,8 @@ const els = {
   paymentDateInput: document.querySelector("#paymentDateInput"),
   paymentWaterInput: document.querySelector("#paymentWaterInput"),
   paymentGarbageInput: document.querySelector("#paymentGarbageInput"),
+  paymentBalanceInput: document.querySelector("#paymentBalanceInput"),
+  paymentNotesInput: document.querySelector("#paymentNotesInput"),
   deletePaymentButton: document.querySelector("#deletePaymentButton"),
   closePaymentDialogButton: document.querySelector("#closePaymentDialogButton"),
 
@@ -820,8 +822,8 @@ function renderPayments() {
   if (visiblePayments.length === 0) {
     const selectedMonth = els.paymentMonthFilter.value;
     els.paymentTable.innerHTML = selectedMonth
-      ? `<tr class="payment-month-divider"><td colspan="13">${escapeHtml(formatPaymentMonth(selectedMonth))}</td></tr><tr><td colspan="13"><div class="empty-state">No payments recorded for this month yet.</div></td></tr>`
-      : `<tr><td colspan="13"><div class="empty-state">No payments recorded yet.</div></td></tr>`;
+      ? `<tr class="payment-month-divider"><td colspan="14">${escapeHtml(formatPaymentMonth(selectedMonth))}</td></tr><tr><td colspan="14"><div class="empty-state">No payments recorded for this month yet.</div></td></tr>`
+      : `<tr><td colspan="14"><div class="empty-state">No payments recorded yet.</div></td></tr>`;
     return;
   }
 
@@ -839,7 +841,7 @@ function renderPayments() {
         garbage: summary.garbage + Number(payment.garbageAmount || 0),
         totalDue: summary.totalDue + Number(payment.totalDue || 0)
       }), { rent: 0, water: 0, garbage: 0, totalDue: 0 });
-      return `${startsMonthGroup ? `<tr class="payment-month-divider"><td colspan="13">${escapeHtml(formatPaymentMonth(p.rentMonth))}</td></tr>` : ""}
+      return `${startsMonthGroup ? `<tr class="payment-month-divider"><td colspan="14">${escapeHtml(formatPaymentMonth(p.rentMonth))}</td></tr>` : ""}
       <tr class="${startsHouseGroup ? "payment-group-start" : ""}">
         <td>${escapeHtml(p.tenantName)}</td>
         <td>${escapeHtml(p.houseNumber)}</td>
@@ -853,6 +855,7 @@ function renderPayments() {
         <td>${formatMoney(p.totalDue)}</td>
         <td>${formatMoney(p.balance)}</td>
         <td><span class="pill ${Number(p.balance || 0) === 0 ? "approved" : "blocked"}">${Number(p.balance || 0) === 0 ? "Paid" : "Not paid"}</span></td>
+        <td>${escapeHtml(p.notes || "")}</td>
         <td><button class="action-button" data-edit-payment="${p.id}" type="button">Edit</button></td>
       </tr>${endsMonthGroup ? `
       <tr class="payment-month-total">
@@ -861,7 +864,7 @@ function renderPayments() {
         <td>${formatMoney(monthTotals.water)}</td>
         <td>${formatMoney(monthTotals.garbage)}</td>
         <td>${formatMoney(monthTotals.totalDue)}</td>
-        <td colspan="2"></td>
+        <td colspan="3"></td>
         <td><button class="action-button" data-record-payment-month="${escapeHtml(p.rentMonth || "")}" type="button">+ Record payment</button></td>
       </tr>` : ""}
     `;
@@ -974,6 +977,8 @@ els.paymentTable.addEventListener("click", (event) => {
   els.paymentDateInput.value = payment.paymentDate || "";
   els.paymentWaterInput.value = payment.waterAmount || 0;
   els.paymentGarbageInput.value = payment.garbageAmount || 0;
+  els.paymentBalanceInput.value = payment.balance ?? "";
+  els.paymentNotesInput.value = payment.notes || "";
   els.paymentDialogTitle.textContent = "Edit payment";
   els.deletePaymentButton.hidden = false;
   els.paymentDialog.showModal();
@@ -1000,8 +1005,10 @@ els.paymentForm.addEventListener("submit", async (event) => {
     amount: els.paymentAmountInput.value,
     rentMonth: els.paymentMonthInput.value,
     paymentDate: els.paymentDateInput.value,
+    balance: els.paymentBalanceInput.value,
     waterAmount: Number(els.paymentWaterInput.value || 0),
-    garbageAmount: Number(els.paymentGarbageInput.value || 0)
+    garbageAmount: Number(els.paymentGarbageInput.value || 0),
+    notes: els.paymentNotesInput.value.trim()
   };
   try {
     if (tenantName !== tenant.name) {

@@ -63,6 +63,7 @@
                     <th>Price</th>
                     <th>Caregiver</th>
                     <th>Status</th>
+                    <th>Notes</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -524,6 +525,16 @@
           <label>
             <span>Garbage fee</span>
             <input id="paymentGarbageInput" type="number" min="0" step="1" value="0">
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            <span>Balance remaining</span>
+            <input id="paymentBalanceInput" type="number" min="0" step="1" placeholder="Leave blank to calculate automatically">
+          </label>
+          <label>
+            <span>Additional notes</span>
+            <input id="paymentNotesInput" type="text" maxlength="240" placeholder="e.g. Half rent, balance due next month">
           </label>
         </div>
         <div class="modal-actions">

@@ -195,6 +195,7 @@ async function initDb() {
       ALTER TABLE payments ADD COLUMN IF NOT EXISTS garbage_amount numeric NOT NULL DEFAULT 0;
       ALTER TABLE payments ADD COLUMN IF NOT EXISTS total_due numeric NOT NULL DEFAULT 0;
       ALTER TABLE payments ADD COLUMN IF NOT EXISTS rent_month text;
+      ALTER TABLE payments ADD COLUMN IF NOT EXISTS notes text NOT NULL DEFAULT '';
       UPDATE payments
       SET rent_month = TO_CHAR(payment_date, 'YYYY-MM')
       WHERE rent_month IS NULL OR rent_month = '';
@@ -810,7 +811,8 @@ function mapPayment(p, tenantMap) {
     rentAmount: Number(p.rent_amount ?? p.rentAmount ?? 0),
     waterAmount: Number(p.water_amount ?? p.waterAmount ?? 0),
     garbageAmount: Number(p.garbage_amount ?? p.garbageAmount ?? 0),
-    totalDue: Number(p.total_due ?? p.totalDue ?? 0)
+    totalDue: Number(p.total_due ?? p.totalDue ?? 0),
+    notes: p.notes || ""
   };
 }
 
@@ -837,7 +839,7 @@ async function syncTenantRentStatus(tenantId) {
   }
 }
 
-async function createPayment({ tenantId, amount, rentMonth, paymentDate, rentAmount = 0, waterAmount = 0, garbageAmount = 0 }) {
+async function createPayment({ tenantId, amount, rentMonth, paymentDate, balance, rentAmount = 0, waterAmount = 0, garbageAmount = 0, notes = "" }) {
   const tenants = await getTenants();
   const tenant = tenants.find((t) => t.id === tenantId);
   const houses = await getHouses();
@@ -847,7 +849,10 @@ async function createPayment({ tenantId, amount, rentMonth, paymentDate, rentAmo
   const effectiveGarbage = Number(garbageAmount || 0);
   const totalDue = effectiveRent + effectiveWater + effectiveGarbage;
   const paidAmount = Number(amount);
-  const balance = Math.max(totalDue - paidAmount, 0);
+  const calculatedBalance = Math.max(totalDue - paidAmount, 0);
+  const paymentBalance = balance === "" || balance === null || balance === undefined
+    ? calculatedBalance
+    : Math.max(Number(balance) || 0, 0);
 
   const id = crypto.randomUUID();
   const record = {
@@ -859,7 +864,7 @@ async function createPayment({ tenantId, amount, rentMonth, paymentDate, rentAmo
     rentMonth,
     payment_date: paymentDate,
     paymentDate,
-    balance,
+    balance: paymentBalance,
     rent_amount: effectiveRent,
     rentAmount: effectiveRent,
     water_amount: effectiveWater,
@@ -867,13 +872,14 @@ async function createPayment({ tenantId, amount, rentMonth, paymentDate, rentAmo
     garbage_amount: effectiveGarbage,
     garbageAmount: effectiveGarbage,
     total_due: totalDue,
-    totalDue
+    totalDue,
+    notes: String(notes || "")
   };
 
   if (usePostgres) {
     await pool.query(
-      "INSERT INTO payments (id, tenant_id, amount, rent_month, payment_date, balance, rent_amount, water_amount, garbage_amount, total_due) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
-      [id, tenantId, paidAmount, rentMonth, paymentDate, balance, effectiveRent, effectiveWater, effectiveGarbage, totalDue]
+      "INSERT INTO payments (id, tenant_id, amount, rent_month, payment_date, balance, rent_amount, water_amount, garbage_amount, total_due, notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
+      [id, tenantId, paidAmount, rentMonth, paymentDate, paymentBalance, effectiveRent, effectiveWater, effectiveGarbage, totalDue, String(notes || "")]
     );
   } else {
     const db = loadLocalDb();
@@ -886,7 +892,7 @@ async function createPayment({ tenantId, amount, rentMonth, paymentDate, rentAmo
   return record;
 }
 
-async function updatePayment(id, { tenantId, amount, rentMonth, paymentDate, waterAmount = 0, garbageAmount = 0 }) {
+async function updatePayment(id, { tenantId, amount, rentMonth, paymentDate, balance, waterAmount = 0, garbageAmount = 0, notes = "" }) {
   let existing;
   if (usePostgres) {
     const result = await pool.query("SELECT * FROM payments WHERE id=$1", [id]);
@@ -910,19 +916,22 @@ async function updatePayment(id, { tenantId, amount, rentMonth, paymentDate, wat
   const effectiveGarbage = Number(garbageAmount || 0);
   const totalDue = effectiveRent + effectiveWater + effectiveGarbage;
   const paidAmount = Number(amount);
-  const balance = Math.max(totalDue - paidAmount, 0);
+  const calculatedBalance = Math.max(totalDue - paidAmount, 0);
+  const paymentBalance = balance === "" || balance === null || balance === undefined
+    ? calculatedBalance
+    : Math.max(Number(balance) || 0, 0);
 
   if (usePostgres) {
     await pool.query(
-      "UPDATE payments SET tenant_id=$2, amount=$3, rent_month=$4, payment_date=$5, balance=$6, rent_amount=$7, water_amount=$8, garbage_amount=$9, total_due=$10 WHERE id=$1",
-      [id, tenantId, paidAmount, rentMonth, paymentDate, balance, effectiveRent, effectiveWater, effectiveGarbage, totalDue]
+      "UPDATE payments SET tenant_id=$2, amount=$3, rent_month=$4, payment_date=$5, balance=$6, rent_amount=$7, water_amount=$8, garbage_amount=$9, total_due=$10, notes=$11 WHERE id=$1",
+      [id, tenantId, paidAmount, rentMonth, paymentDate, paymentBalance, effectiveRent, effectiveWater, effectiveGarbage, totalDue, String(notes || "")]
     );
   } else {
     Object.assign(existing, {
       tenant_id: tenantId, tenantId, amount: paidAmount, rent_month: rentMonth, rentMonth,
-      payment_date: paymentDate, paymentDate, balance, rent_amount: effectiveRent, rentAmount: effectiveRent,
+      payment_date: paymentDate, paymentDate, balance: paymentBalance, rent_amount: effectiveRent, rentAmount: effectiveRent,
       water_amount: effectiveWater, waterAmount: effectiveWater, garbage_amount: effectiveGarbage,
-      garbageAmount: effectiveGarbage, total_due: totalDue, totalDue
+      garbageAmount: effectiveGarbage, total_due: totalDue, totalDue, notes: String(notes || "")
     });
     saveLocalDb();
   }
@@ -932,7 +941,7 @@ async function updatePayment(id, { tenantId, amount, rentMonth, paymentDate, wat
     await syncTenantRentStatus(previousTenantId);
   }
 
-  return { id, tenantId, amount: paidAmount, rentMonth, paymentDate, balance, rentAmount: effectiveRent, waterAmount: effectiveWater, garbageAmount: effectiveGarbage, totalDue };
+  return { id, tenantId, amount: paidAmount, rentMonth, paymentDate, balance: paymentBalance, rentAmount: effectiveRent, waterAmount: effectiveWater, garbageAmount: effectiveGarbage, totalDue, notes: String(notes || "") };
 }
 
 async function deletePayment(id) {
@@ -1498,8 +1507,10 @@ async function handleApi(req, res, pathname) {
       amount: body.amount,
       rentMonth: body.rentMonth,
       paymentDate: body.paymentDate,
+      balance: body.balance,
       waterAmount: body.waterAmount,
-      garbageAmount: body.garbageAmount
+      garbageAmount: body.garbageAmount,
+      notes: body.notes
     });
     sendJson(res, 201, payment, req);
     return;
