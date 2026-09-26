@@ -13,6 +13,9 @@ const localDbFile = path.join(__dirname, "dev-db.json");
 
 let pool;
 let localDb;
+let databaseReady = false;
+let databaseInitError = null;
+let databaseInitPromise = null;
 
 // ---------------------------------------------------------------------------
 // Static file serving — serves the frontend (HTML/CSS/JS) from the same
@@ -59,7 +62,8 @@ function serveStaticFile(req, res, pathname) {
 if (usePostgres) {
   pool = new Pool({
     connectionString: DATABASE_URL,
-    ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined
+    ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
+    connectionTimeoutMillis: 10000
   });
 }
 
@@ -1188,7 +1192,20 @@ async function handleApi(req, res, pathname) {
   const matchReject = pathname.match(/^\/api\/applications\/([^/]+)\/reject$/);
 
   if (req.method === "GET" && pathname === "/api/health") {
-    sendJson(res, 200, { ok: true, app: "rental-management-system" }, req);
+    sendJson(res, 200, {
+      ok: true,
+      app: "rental-management-system",
+      databaseReady,
+      databaseError: databaseInitError ? "Database initialization failed" : null
+    }, req);
+    return;
+  }
+
+  if (!databaseReady) {
+    res.setHeader("Retry-After", "10");
+    sendError(res, 503, databaseInitError
+      ? "The database is temporarily unavailable. Please try again shortly."
+      : "The database is starting. Please try again shortly.", req);
     return;
   }
 
@@ -1646,10 +1663,29 @@ const server = http.createServer(async (req, res) => {
 });
 
 async function startServer() {
-  await initDb();
   server.listen(PORT, () => {
     console.log(`Rental Management System backend running at http://localhost:${PORT}`);
+    initializeDatabase();
   });
+}
+
+function initializeDatabase() {
+  if (databaseInitPromise) return databaseInitPromise;
+  databaseInitPromise = initDb()
+    .then(() => {
+      databaseReady = true;
+      databaseInitError = null;
+      console.log("Database initialization complete");
+    })
+    .catch((error) => {
+      databaseInitError = error;
+      console.error("Database initialization failed:", error);
+      setTimeout(() => {
+        databaseInitPromise = null;
+        initializeDatabase();
+      }, 15000).unref();
+    });
+  return databaseInitPromise;
 }
 
 if (require.main === module) {
