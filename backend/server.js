@@ -1196,7 +1196,9 @@ async function handleApi(req, res, pathname) {
       ok: true,
       app: "rental-management-system",
       databaseReady,
-      databaseError: databaseInitError ? "Database initialization failed" : null
+      databaseError: databaseInitError
+        ? { code: databaseInitError.code || "DB_INIT_FAILED", message: "Database initialization failed" }
+        : null
     }, req);
     return;
   }
