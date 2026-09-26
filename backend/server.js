@@ -1133,6 +1133,7 @@ function safeDatabaseErrorMessage(error) {
   return String(error && error.message || "Database initialization failed")
     .replace(/postgres(?:ql)?:\/\/[^\s]+/gi, "[database connection redacted]")
     .replace(/password\s+[^\s]+/gi, "password [redacted]")
+    .replace(/tenant\/user\s+[^\s]+/gi, "tenant/user [redacted]")
     .slice(0, 180);
 }
 
