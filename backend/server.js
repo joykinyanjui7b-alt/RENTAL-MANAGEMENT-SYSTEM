@@ -1129,6 +1129,13 @@ function sendError(res, statusCode, message, req) {
   sendJson(res, statusCode, { error: message }, req);
 }
 
+function safeDatabaseErrorMessage(error) {
+  return String(error && error.message || "Database initialization failed")
+    .replace(/postgres(?:ql)?:\/\/[^\s]+/gi, "[database connection redacted]")
+    .replace(/password\s+[^\s]+/gi, "password [redacted]")
+    .slice(0, 180);
+}
+
 function readRequestBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -1197,7 +1204,7 @@ async function handleApi(req, res, pathname) {
       app: "rental-management-system",
       databaseReady,
       databaseError: databaseInitError
-        ? { code: databaseInitError.code || "DB_INIT_FAILED", message: "Database initialization failed" }
+        ? { code: databaseInitError.code || "DB_INIT_FAILED", message: safeDatabaseErrorMessage(databaseInitError) }
         : null
     }, req);
     return;
